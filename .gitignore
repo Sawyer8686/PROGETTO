@@ -1,0 +1,8 @@
+# Unreal Engine 5 – cartelle da ignorare
+Binaries/
+Build/
+DerivedDataCache/
+Intermediate/
+Saved/
+*.log
+*.vs/

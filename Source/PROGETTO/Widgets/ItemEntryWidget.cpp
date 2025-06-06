@@ -1,0 +1,348 @@
+
+#include "ItemEntryWidget.h"
+#include "Components/TextBlock.h"
+#include "Components/Button.h"
+#include "PROGETTO/PROGETTOCharacter.h"
+#include "PROGETTO/Widgets/ItemDescriptionWidget.h"
+#include "PROGETTO/Widgets/InventoryWidget.h" 
+#include "PROGETTO/Actors/KeyActor.h"
+#include "PROGETTO/Structs/Enums/EquipmentTypes.h"
+#include "PROGETTO/Actors/BatteryActor.h"
+#include "PROGETTO/Actors/TorchActor.h"
+#include "Engine/Texture2D.h"
+
+
+void UItemEntryWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+
+	UE_LOG(LogTemp, Warning, TEXT("UItemEntryWidget::NativeConstruct() eseguito. EquipButton = %s"),
+		EquipButton ? TEXT("VALIDO") : TEXT("nullptr"));
+
+	if (UseButton)
+	{
+		UseButton->OnClicked.AddDynamic(this, &UItemEntryWidget::OnUseButtonClicked);
+	}
+	if (DescriptionButton)
+	{
+		DescriptionButton->OnClicked.AddDynamic(this, &UItemEntryWidget::OnDescriptionButtonClicked);
+	}
+	if (DiscardButton)
+	{
+		DiscardButton->OnClicked.AddDynamic(this, &UItemEntryWidget::OnDiscardButtonClicked);
+	}
+	if (EquipButton)
+	{
+		EquipButton->OnClicked.AddDynamic(this, &UItemEntryWidget::OnEquipButtonClicked);
+	}
+}
+
+void UItemEntryWidget::UpdateEquipButtonText()
+{
+	/*if (!EquipButton || !Item)
+		return;
+
+	UTextBlock* ButtonText = Cast<UTextBlock>(EquipButton->GetChildAt(0));
+	if (!ButtonText)
+		return;
+
+	// Ora uso un flag generico bIsEquipped di BaseItem:
+	if (Item->bIsEquipped)
+		ButtonText->SetText(FText::FromString(TEXT("Unequip")));
+	else
+		ButtonText->SetText(FText::FromString(TEXT("Equip")));*/
+
+	/*if (!OwningCharacter)
+		return;
+
+	// Prendo la mappa <slot ? item> dal Character
+	TMap<EEquipmentSlot, ABaseItem*>& MapEquip = OwningCharacter->EquippedItemSlots;
+
+	// Lambda per ottenere nome o “Nessuno”
+	auto GetNameOrNone = [&](EEquipmentSlot ChosenSlot)->FString
+		{
+			ABaseItem** Found = MapEquip.Find(ChosenSlot);
+			if (Found && *Found)
+				return (*Found)->ItemName;
+			else
+				return FString(TEXT("Nessuno"));
+		};
+
+	// Per ognuno slot: scrivo il testo e mostro/nascondo il bottone
+	{
+		FString Name = GetNameOrNone(EEquipmentSlot::Head);
+		HeadEquippedText->SetText(FText::FromString(Name));
+		HeadUnequipButton->SetVisibility(
+			(Name != "Nessuno") ? ESlateVisibility::Visible : ESlateVisibility::Hidden
+		);
+	}
+	{
+		FString Name = GetNameOrNone(EEquipmentSlot::RightHand);
+		RightHandEquippedText->SetText(FText::FromString(Name));
+		RightHandUnequipButton->SetVisibility(
+			(Name != "Nessuno") ? ESlateVisibility::Visible : ESlateVisibility::Hidden
+		);
+	}
+	{
+		FString Name = GetNameOrNone(EEquipmentSlot::LeftHand);
+		LeftHandEquippedText->SetText(FText::FromString(Name));
+		LeftHandUnequipButton->SetVisibility(
+			(Name != "Nessuno") ? ESlateVisibility::Visible : ESlateVisibility::Hidden
+		);
+	}
+	{
+		FString Name = GetNameOrNone(EEquipmentSlot::Torso);
+		TorsoEquippedText->SetText(FText::FromString(Name));
+		TorsoUnequipButton->SetVisibility(
+			(Name != "Nessuno") ? ESlateVisibility::Visible : ESlateVisibility::Hidden
+		);
+	}
+	{
+		FString Name = GetNameOrNone(EEquipmentSlot::RightLeg);
+		RightLegEquippedText->SetText(FText::FromString(Name));
+		RightLegUnequipButton->SetVisibility(
+			(Name != "Nessuno") ? ESlateVisibility::Visible : ESlateVisibility::Hidden
+		);
+	}
+	{
+		FString Name = GetNameOrNone(EEquipmentSlot::LeftLeg);
+		LeftLegEquippedText->SetText(FText::FromString(Name));
+		LeftLegUnequipButton->SetVisibility(
+			(Name != "Nessuno") ? ESlateVisibility::Visible : ESlateVisibility::Hidden
+		);
+	}*/
+
+	
+}
+
+void UItemEntryWidget::SetupFromItem(ABaseItem* InItem, APROGETTOCharacter* InOwningCharacter)
+{
+	Item = InItem;
+	OwningCharacter = InOwningCharacter;
+
+	if (!Item || !DetailsText)
+		return;
+
+	FString Info = FString::Printf(TEXT(" %s\n Peso: %.1f"), *Item->ItemName, Item->Weight);
+		
+	DetailsText->SetText(FText::FromString(Info));
+
+	if (UseButton)
+	{
+		bool bIsToolOrConsumable = (Item->bCanBeConsumed || Item->ItemType == EItemType::Tool);
+		UseButton->SetVisibility(bIsToolOrConsumable ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);		
+	}
+
+	if (DescriptionButton)
+	{
+		bool bCanShowDescription = (Item->Description.IsEmpty() == false);
+		DescriptionButton->SetVisibility(bCanShowDescription ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);		
+	}
+
+	if (DiscardButton)
+	{
+		DiscardButton->SetVisibility(ESlateVisibility::Visible);
+	}
+
+	// Se è equipaggiabile, mostro EquipButton; altrimenti lo nascondo
+	if (EquipButton)
+	{
+		if (Item->ItemType == EItemType::Equippable)
+			EquipButton->SetVisibility(ESlateVisibility::Visible);
+		else
+			EquipButton->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+	UpdateEquipButtonText();
+}
+
+void UItemEntryWidget::DisplayEmptySlot()
+{
+	if (DetailsText)
+	{
+		DetailsText->SetText(FText::FromString(TEXT("Slot")));
+	}
+	if (UseButton)       UseButton->SetVisibility(ESlateVisibility::Collapsed);
+	if (DescriptionButton) DescriptionButton->SetVisibility(ESlateVisibility::Collapsed);
+	if (DiscardButton)   DiscardButton->SetVisibility(ESlateVisibility::Collapsed);
+	if (EquipButton)     EquipButton->SetVisibility(ESlateVisibility::Collapsed);
+
+	Item = nullptr;
+	OwningCharacter = nullptr;
+}
+
+void UItemEntryWidget::SetInventoryWidgetParent(UInventoryWidget* Parent)
+{
+	ParentInventoryWidget = Parent;
+}
+
+void UItemEntryWidget::OnUseButtonClicked()
+{
+	if (!Item || !OwningCharacter)
+		return;
+
+	// Verifico se è una BatteryActor
+	if (ABatteryActor* Battery = Cast<ABatteryActor>(Item))
+	{
+		// Solo se la batteria corrente è inferiore al massimo posso usare questa batteria
+		if (OwningCharacter->CurrentBatteryEnergy >= OwningCharacter->MaxBatteryEnergy)
+		{
+			OwningCharacter->ShowNotification(TEXT("Batteria già al massimo!"), 1.5f);
+			return;
+		}
+
+		float Amount = Battery->ChargeAmount;
+		// Calcolo nuova carica e uso SetBatteryEnergy (fa già FMath::Clamp internamente)
+		OwningCharacter->SetBatteryEnergy(OwningCharacter->CurrentBatteryEnergy + Amount);
+
+		// Rimuovo la batteria dall'inventario e la distruggo
+		OwningCharacter->RemoveItemFromInventory(Item);
+		if (OwningCharacter->InventoryWidgetInstance &&
+			OwningCharacter->InventoryWidgetInstance->IsVisible())
+		{
+			OwningCharacter->InventoryWidgetInstance->SetMyInventoryItems(
+				OwningCharacter->Inventory,
+				OwningCharacter->CurrentCarryWeight,
+				OwningCharacter->MaxCarryWeight
+			);
+		}
+		Battery->Destroy();
+		return;
+	}
+
+	if (Item->bCanBeConsumed)
+	{
+		
+		if (Item->ItemType == EItemType::Food)
+		{
+			OwningCharacter->RestoreHunger(Item->HungerRestore);
+		}
+		else if (Item->ItemType == EItemType::Beverage)
+		{
+			OwningCharacter->RestoreThirst(Item->ThirstRestore);
+		}
+
+		OwningCharacter->RemoveItemFromInventory(Item);
+		Item->Destroy();
+	}
+
+	if (OwningCharacter->InventoryWidgetInstance &&
+		OwningCharacter->InventoryWidgetInstance->IsVisible())
+	{
+		OwningCharacter->InventoryWidgetInstance->SetMyInventoryItems(
+			OwningCharacter->Inventory,
+			OwningCharacter->CurrentCarryWeight,
+			OwningCharacter->MaxCarryWeight
+		);
+	}
+}
+
+void UItemEntryWidget::OnDescriptionButtonClicked()
+{
+	if (!Item || !ItemDescriptionWidgetClass)
+		return;
+
+	// Se non ho già un description aperto da questa entry, lo creo
+	if (!ItemDescriptionInstance)
+	{
+		ItemDescriptionInstance = CreateWidget<UItemDescriptionWidget>(GetWorld(), ItemDescriptionWidgetClass);
+		if (ItemDescriptionInstance)
+		{
+			// Impostiamo il testo
+			ItemDescriptionInstance->SetDescriptionText(Item->Description);
+
+			// Lo aggiungo in viewport (z-order alto, esempio: 100)
+			ItemDescriptionInstance->AddToViewport(100);
+
+			// Registro questa istanza nel parent (InventoryWidget)
+			if (ParentInventoryWidget)
+			{
+				ParentInventoryWidget->RegisterDescriptionWidget(ItemDescriptionInstance);
+			}
+
+		}
+	}
+	else
+	{
+		
+		ItemDescriptionInstance->RemoveFromParent();
+		if (ParentInventoryWidget)
+		{
+			ParentInventoryWidget->UnregisterDescriptionWidget(ItemDescriptionInstance);
+		}
+		ItemDescriptionInstance = nullptr;
+	}
+}
+
+void UItemEntryWidget::OnDiscardButtonClicked()
+{
+	
+	if (!Item || !OwningCharacter)
+		return;
+
+	OwningCharacter->DropItem(Item);
+
+	if (OwningCharacter->InventoryWidgetInstance &&
+		OwningCharacter->InventoryWidgetInstance->IsVisible())
+	{
+		OwningCharacter->InventoryWidgetInstance->SetMyInventoryItems(
+			OwningCharacter->Inventory,
+			OwningCharacter->CurrentCarryWeight,
+			OwningCharacter->MaxCarryWeight
+		);
+	}
+
+}
+
+void UItemEntryWidget::OnEquipButtonClicked()
+{
+
+	UE_LOG(LogTemp, Warning, TEXT("OnEquipButtonClicked() chiamato per item %s"), Item ? *Item->ItemName : TEXT("nessuno"));
+	
+	if (!Item || !OwningCharacter)
+		return;
+
+	// Se è equipaggiabile:
+	if (Item->ItemType == EItemType::Equippable)
+	{
+		// 1) Se è già equip, chiamo semplicemente l’Unequip del Character
+		if (Item->bIsEquipped)
+		{
+			OwningCharacter->UnequipItem(Item);
+			UpdateEquipButtonText();
+
+			return;
+		}
+
+		// 2) Se non è equip e voglio equip, apro il widget di selezione slot
+		if (!EquipSlotSelectionWidgetInstance && EquipSlotSelectionWidgetClass)
+		{
+			EquipSlotSelectionWidgetInstance = CreateWidget<UEquipSlotSelectionWidget>(GetWorld(), EquipSlotSelectionWidgetClass);
+			if (EquipSlotSelectionWidgetInstance)
+			{
+				// Passo il Character e l’Item corrente al widget
+				EquipSlotSelectionWidgetInstance->OwningCharacter = OwningCharacter;
+				EquipSlotSelectionWidgetInstance->PendingItem = Item;
+
+				// Imposto l’item e il Character nel widget (essenziale per disabilitare/abilitare bottoni)
+				EquipSlotSelectionWidgetInstance->SetupForItem(Item, OwningCharacter);
+
+				// Lo mostro con Z-order alto
+				EquipSlotSelectionWidgetInstance->AddToViewport(1000);
+			}
+		}
+		// Se esiste già una istanza aperta (non chiusa), potresti ignorare o force-close qui
+	}
+
+}
+	
+
+
+
+
+
+
+
+
+
+
