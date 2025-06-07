@@ -112,6 +112,10 @@ APROGETTOCharacter::APROGETTOCharacter()
 	MaxCarryWeight = 20.f;  // es. 20 kg
 	CurrentCarryWeight = 0.f;
 
+	// Inizializziamo i puntatori a nullptr
+	//InventoryWidgetInstance = nullptr;
+	
+
 }
 
 void APROGETTOCharacter::BeginPlay()
@@ -790,7 +794,8 @@ void APROGETTOCharacter::DropBackpack()
 		// Chiudi widget inventario se aperto
 		if (InventoryWidgetInstance && InventoryWidgetInstance->IsInViewport())
 		{
-			InventoryWidgetInstance->RemoveFromParent();
+			//InventoryWidgetInstance->RemoveFromParent();
+			InventoryWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
 			APlayerController* PC = Cast<APlayerController>(GetController());
 			if (PC)
 			{

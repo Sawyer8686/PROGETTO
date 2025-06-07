@@ -8,6 +8,7 @@
 #include "PROGETTO/Actors/KeyActor.h"
 #include "PROGETTO/Structs/Enums/EquipmentTypes.h"
 #include "PROGETTO/Actors/BatteryActor.h"
+#include "Kismet/GameplayStatics.h"
 #include "PROGETTO/Actors/TorchActor.h"
 #include "Engine/Texture2D.h"
 
@@ -239,7 +240,7 @@ void UItemEntryWidget::OnUseButtonClicked()
 
 void UItemEntryWidget::OnDescriptionButtonClicked()
 {
-	if (!Item || !ItemDescriptionWidgetClass)
+	/*if (!Item || !ItemDescriptionWidgetClass)
 		return;
 
 	// Se non ho già un description aperto da questa entry, lo creo
@@ -250,29 +251,109 @@ void UItemEntryWidget::OnDescriptionButtonClicked()
 		{
 			// Impostiamo il testo
 			ItemDescriptionInstance->SetDescriptionText(Item->Description);
-
-			// Lo aggiungo in viewport (z-order alto, esempio: 100)
 			ItemDescriptionInstance->AddToViewport(100);
 
-			// Registro questa istanza nel parent (InventoryWidget)
+			// Registro l'istanza aperta nel widget inventory
 			if (ParentInventoryWidget)
 			{
-				ParentInventoryWidget->RegisterDescriptionWidget(ItemDescriptionInstance);
+				ParentInventoryWidget->RegisterOpenDescription(ItemDescriptionInstance);
 			}
 
 		}
-	}
-	else
+		else
+		{
+			// Chiudo il description aperto e deregistro
+			ItemDescriptionInstance->RemoveFromParent();
+			if (ParentInventoryWidget)
+			{
+				ParentInventoryWidget->ClearOpenDescriptions(); // o usa UnregisterOpenDescription se disponibile
+			}
+			ItemDescriptionInstance = nullptr;
+		}
+		}*/
+
+	if (!Item || !ItemDescriptionWidgetClass)
+		return;
+
+	// Se il description è già aperto, lo chiudo e resetto
+	if (ItemDescriptionInstance && ItemDescriptionInstance->IsInViewport())
 	{
-		
 		ItemDescriptionInstance->RemoveFromParent();
 		if (ParentInventoryWidget)
-		{
-			ParentInventoryWidget->UnregisterDescriptionWidget(ItemDescriptionInstance);
-		}
+			ParentInventoryWidget->ClearOpenDescriptions();
 		ItemDescriptionInstance = nullptr;
+		return;
 	}
+
+	// *** APRI NUOVA ISTANZA ***
+	if (APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0))
+	{
+		// Usa il PlayerController come context in CreateWidget
+		ItemDescriptionInstance = CreateWidget<UItemDescriptionWidget>(PC, ItemDescriptionWidgetClass);
+		if (ItemDescriptionInstance)
+		{
+			// PRIMA aggiungi al viewport
+			ItemDescriptionInstance->AddToViewport(101);
+			// POI imposta il testo
+			ItemDescriptionInstance->SetDescriptionText(Item->Description);
+			// Registra nel parent
+			if (ParentInventoryWidget)
+				ParentInventoryWidget->ClearOpenDescriptions();
+
+			// Ripristino focus su inventario e input mode
+			if (APlayerController* APC = UGameplayStatics::GetPlayerController(this, 0))
+			{
+				if (ParentInventoryWidget && ParentInventoryWidget->CloseButton)
+				{
+					APC->SetShowMouseCursor(true);
+					FInputModeUIOnly UIInput;
+					UIInput.SetWidgetToFocus(ParentInventoryWidget->CloseButton->TakeWidget());
+					UIInput.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+					APC->SetInputMode(UIInput);
+				}
+			}
+		}
+		else
+		{
+			// Assicuro che non ci sia un'istanza rimasta
+			if (ItemDescriptionInstance)
+			{
+				ItemDescriptionInstance->RemoveFromParent();
+				ItemDescriptionInstance = nullptr;
+			}
+
+			// Apro un nuovo description widget
+			ItemDescriptionInstance = CreateWidget<UItemDescriptionWidget>(GetWorld(), ItemDescriptionWidgetClass);
+			if (ItemDescriptionInstance)
+			{
+				ItemDescriptionInstance->SetParentInventoryWidget(ParentInventoryWidget);
+				ItemDescriptionInstance->SetDescriptionText(Item->Description);
+				ItemDescriptionInstance->AddToViewport(101);
+				ItemDescriptionInstance->SetVisibility(ESlateVisibility::Visible);
+
+				if (ParentInventoryWidget)
+				{
+					ParentInventoryWidget->RegisterOpenDescription(ItemDescriptionInstance);
+				}
+
+				// Imposto modalità input per UI e game, focus su description
+				if (APlayerController* APC = UGameplayStatics::GetPlayerController(this, 0))
+				{
+					APC->SetShowMouseCursor(true);
+					FInputModeGameAndUI InputMode;
+					InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+					InputMode.SetWidgetToFocus(ItemDescriptionInstance->TakeWidget());
+					APC->SetInputMode(InputMode);
+				}
+			}
+		}
+
+
+	}
+
 }
+
+
 
 void UItemEntryWidget::OnDiscardButtonClicked()
 {

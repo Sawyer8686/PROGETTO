@@ -7,6 +7,8 @@
 #include "Components/Border.h" 
 #include "ItemDescriptionWidget.generated.h"
 
+class UInventoryWidget;
+
 /**
  *  UItemDescriptionWidget: mostra una finestra con la descrizione testuale di un oggetto
  */
@@ -19,6 +21,14 @@ public:
 	/** Imposta il testo della descrizione */
 	UFUNCTION(BlueprintCallable, Category = "Item Description")
 	void SetDescriptionText(const FText& InDescription);
+
+	/** Imposta il widget Inventory padre per deregistrazione */
+	UFUNCTION()
+	void SetParentInventoryWidget(UInventoryWidget* Parent);
+
+	/** Riferimento al widget Inventory che ha aperto questa descrizione */
+	UPROPERTY()
+	UInventoryWidget* ParentInventoryWidget = nullptr;
 
 protected:
 	/** Questo TextBlock deve esistere nel Widget Blueprint e chiamarsi esattamente "DescriptionText" */

@@ -46,7 +46,7 @@ public:
     UPROPERTY(meta = (BindWidget))
     UButton* EquipButton;
 
-    UPROPERTY(EditDefaultsOnly, Category = "UI")
+    UPROPERTY(EditAnywhere, Category = "UI")
     TSubclassOf<UItemDescriptionWidget> ItemDescriptionWidgetClass;
 
     UPROPERTY()

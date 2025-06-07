@@ -16,6 +16,7 @@ class UItemEntryWidget;
 class UItemDescriptionWidget; 
 class UEquippedItemsWidget;
 
+
 UCLASS()
 class PROGETTO_API UInventoryWidget : public UUserWidget
 {
@@ -23,7 +24,7 @@ class PROGETTO_API UInventoryWidget : public UUserWidget
 
 public:
 
-	// ??? “Unequip” fisso: metodi membro che verranno bindati in NativeConstruct() ???
+	
 	UFUNCTION()
 	void OnHeadUnequipClicked();
 	UFUNCTION()
@@ -80,14 +81,23 @@ public:
 
 	void SetMyInventoryItems(const TArray<ABaseItem*>& Items, float CurrentWeight, float MaxWeight);
 
-	void RegisterDescriptionWidget(UItemDescriptionWidget* DescWidget);
-	void UnregisterDescriptionWidget(UItemDescriptionWidget* DescWidget);
+	//void RegisterDescriptionWidget(UItemDescriptionWidget* DescWidget);
+
+	//void UnregisterDescriptionWidget(UItemDescriptionWidget* DescWidget);
+
+	// Registra un description-widget aperto dall'entry
+	UFUNCTION()
+	void RegisterOpenDescription(UItemDescriptionWidget* Description);
+
+	// Chiude e pulisce tutti i description-widget aperti
+	UFUNCTION()
+	void ClearOpenDescriptions();
 
 	UPROPERTY()
 	TArray<UItemDescriptionWidget*> OpenDescriptionWidgets;
 
-	UPROPERTY(meta = (BindWidget))
-	class UVerticalBox* ItemsBox;
+	//UPROPERTY(meta = (BindWidget))
+	//class UVerticalBox* ItemsBox;
 
 	UPROPERTY(meta = (BindWidget))
 	class UUniformGridPanel* ItemsGrid;
@@ -116,4 +126,5 @@ public:
 	void SetOwningCharacter(APROGETTOCharacter* Character) { OwningCharacter = Character; }
 
 	void FocusFirstButton();
+
 };

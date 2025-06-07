@@ -5,7 +5,9 @@
 #include "PROGETTO/Widgets/ItemDescriptionWidget.h" 
 #include "PROGETTO/Widgets/EquipSlotSelectionWidget.h"
 #include "PROGETTO/Structs/Enums/EquipmentTypes.h"
+#include "PROGETTO/Actors/BackPackActor.h"
 #include "Kismet/GameplayStatics.h"
+#include "Blueprint/WidgetBlueprintLibrary.h"
 #include "Components/Button.h"
 #include "PROGETTO/Widgets/ItemEntryWidget.h"
 
@@ -84,6 +86,9 @@ void UInventoryWidget::OnCloseButtonClicked()
 	if (!OwningCharacter || !IsVisible())
 		return;
 
+	// Chiudo eventuali description aperti
+	ClearOpenDescriptions();
+	
 	SetVisibility(ESlateVisibility::Hidden);
 
 	if (APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController()))
@@ -91,6 +96,8 @@ void UInventoryWidget::OnCloseButtonClicked()
 		OwningCharacter->EnableInput(PC);
 		PC->SetShowMouseCursor(false);
 		PC->SetInputMode(FInputModeGameOnly());
+
+		
 
 		if (OwningCharacter->StatsWidgetInstance)
 			OwningCharacter->StatsWidgetInstance->SetVisibility(ESlateVisibility::Visible);
@@ -102,23 +109,21 @@ void UInventoryWidget::OnCloseButtonClicked()
 
 void UInventoryWidget::SetMyInventoryItems(const TArray<ABaseItem*>& Items, float CurrentWeight, float MaxWeight)
 {
-	UE_LOG(LogTemp, Warning, TEXT("SetMyInventoryItems: ricevo %d elementi"), Items.Num());
-
+	
 	if (!ItemsGrid)
 		return;
 
-	// 1) Creo un array temporaneo che contenga solo i puntatori validi
+	// Chiudo prima eventuali description-widget aperti
+	ClearOpenDescriptions();
+
 	TArray<ABaseItem*> Filtered;
 	Filtered.Reserve(Items.Num());
 	for (ABaseItem* It : Items)
 	{
 		if (IsValid(It))
-			Filtered.Add(It);
-		else
-			UE_LOG(LogTemp, Warning, TEXT("SetMyInventoryItems: trovato nullptr o non valido in Inventory!"));
+			Filtered.Add(It);	
 	}
-	UE_LOG(LogTemp, Warning, TEXT("SetMyInventoryItems: items validi filtrati = %d"), Filtered.Num());
-
+	
 	ItemsGrid->ClearChildren();
 
 	for (int32 i = 0; i < MaxInventorySlots; ++i)
@@ -126,6 +131,9 @@ void UInventoryWidget::SetMyInventoryItems(const TArray<ABaseItem*>& Items, floa
 		UItemEntryWidget* Entry = CreateWidget<UItemEntryWidget>(this, ItemEntryWidgetClass);
 		if (!Entry)
 			continue;
+
+		// Imposto il parent per registrare le descrizioni aperte
+		//Entry->SetParentInventoryWidget(this);
 
 		if (i < Items.Num() && Items[i])
 			Entry->SetupFromItem(Items[i], OwningCharacter);
@@ -145,7 +153,27 @@ void UInventoryWidget::SetMyInventoryItems(const TArray<ABaseItem*>& Items, floa
 	}
 }
 
-void UInventoryWidget::RegisterDescriptionWidget(UItemDescriptionWidget* DescWidget)
+void UInventoryWidget::RegisterOpenDescription(UItemDescriptionWidget* Description)
+{
+	if (Description)
+	{
+		OpenDescriptionWidgets.Add(Description);
+	}
+}
+
+void UInventoryWidget::ClearOpenDescriptions()
+{
+	for (UItemDescriptionWidget* Desc : OpenDescriptionWidgets)
+	{
+		if (Desc)
+		{
+			Desc->RemoveFromParent();
+		}
+	}
+	OpenDescriptionWidgets.Empty();
+}
+
+/*void UInventoryWidget::RegisterDescriptionWidget(UItemDescriptionWidget* DescWidget)
 {
 	if (!DescWidget)
 		return;
@@ -159,7 +187,7 @@ void UInventoryWidget::RegisterDescriptionWidget(UItemDescriptionWidget* DescWid
 void UInventoryWidget::UnregisterDescriptionWidget(UItemDescriptionWidget* DescWidget)
 {
 	OpenDescriptionWidgets.Remove(DescWidget);
-}
+}*/
 
 void UInventoryWidget::NativeConstruct()
 {
