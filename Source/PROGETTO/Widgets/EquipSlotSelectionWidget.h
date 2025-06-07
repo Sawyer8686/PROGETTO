@@ -8,6 +8,7 @@
 class UButton;
 class ABaseItem;
 class APROGETTOCharacter;
+class UInventoryWidget;
 
 UCLASS()
 class PROGETTO_API UEquipSlotSelectionWidget : public UUserWidget
@@ -15,31 +16,26 @@ class PROGETTO_API UEquipSlotSelectionWidget : public UUserWidget
     GENERATED_BODY()
 
 public:
-    // L’item che voglio equipaggiare
+
+   
     UPROPERTY(BlueprintReadOnly, Category = "Equip")
     ABaseItem* PendingItem = nullptr;
-
-
-    // Il Character che fa l’equip
     UPROPERTY(BlueprintReadOnly, Category = "Equip")
     APROGETTOCharacter* OwningCharacter = nullptr;
+    UPROPERTY() 
+    UInventoryWidget* ParentInventory = nullptr;
 
-    // Questi bottoni vanno bindati nel Designer
+
     UPROPERTY(meta = (BindWidget))
     UButton* HeadButton;
-
     UPROPERTY(meta = (BindWidget))
     UButton* RightHandButton;
-
     UPROPERTY(meta = (BindWidget))
     UButton* LeftHandButton;
-
     UPROPERTY(meta = (BindWidget))
     UButton* TorsoButton;
-
     UPROPERTY(meta = (BindWidget))
     UButton* RightLegButton;
-
     UPROPERTY(meta = (BindWidget))
     UButton* LeftLegButton;
 
@@ -48,22 +44,35 @@ public:
 
     virtual void NativeConstruct() override;
 
+
+    /** Equipment slot button handlers */
+
     UFUNCTION()
     void OnHeadClicked();
-
     UFUNCTION()
     void OnRightHandClicked();
-
     UFUNCTION()
     void OnLeftHandClicked();
-
     UFUNCTION()
     void OnTorsoClicked();
-
     UFUNCTION()
     void OnRightLegClicked();
-
     UFUNCTION()
     void OnLeftLegClicked();
+
+
+    /** Disabilita i bottoni e l'interazione con la UI di inventory dietro */
+    void DisableInventoryBehind();
+
+    /** Riabilita la UI di inventory */
+    void EnableInventoryBehind();
+
+    /** Gestisce il click su uno slot */
+    void HandleSlotSelection(EEquipmentSlot Slot);
+
+    void MyShowModal();
+
+    void CloseModal();
 };
+
 

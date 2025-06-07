@@ -32,6 +32,8 @@ class USoundBase;
 class UPhysicalMaterial;
 class UParticleSystem;
 
+
+
 UENUM(BlueprintType)
 enum class EFootstepSurface : uint8
 {
@@ -56,12 +58,18 @@ struct FFootstepData
 	TArray<USoundBase*> FootstepSounds;
 };
 
+
+
+
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
 UCLASS(config=Game)
 class APROGETTOCharacter : public ACharacter
 {
 	GENERATED_BODY()
+
+public:
+
 
 	/** Camera boom positioning the camera behind the character */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
@@ -70,6 +78,9 @@ class APROGETTOCharacter : public ACharacter
 	/** Follow camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FollowCamera;
+
+
+
 	
 	/** MappingContext */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
@@ -103,11 +114,7 @@ class APROGETTOCharacter : public ACharacter
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* MainInteraction;
 
-	
-
 	void HandleInteraction();
-
-public:
 
 	/** Mappa di quali oggetti sono equipaggiati in ciascuno slot */
 	UPROPERTY(BlueprintReadOnly, Category = "Equipment")
@@ -379,7 +386,7 @@ public:
 	UBackpackStatusWidget* BackpackStatusWidgetInstance;
 
 	UFUNCTION()
-	void RemoveItemFromInventory(ABaseItem* Item);
+	bool RemoveItemFromInventory(ABaseItem* Item);
 
 	/** Scarta l’item: lo “droppa” nel mondo e lo rimuove dall’inventario */
 	UFUNCTION()

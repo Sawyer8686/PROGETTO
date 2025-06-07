@@ -313,7 +313,24 @@ bool APROGETTOCharacter::AddItemToInventory(ABaseItem* Item)
 		return false;
 	}
 
-	if (Inventory.Num() >= InventorySize)
+	///if (Inventory.Num() >= InventorySize)
+	//{
+		//ShowNotification(TEXT("Inventario pieno!"), 2.0f);
+		//return false;
+	//}
+
+	// Pulisci eventuali nullptr “sporchi”
+	Inventory.Remove(nullptr);
+
+	// Conta solo i puntatori non-null
+	int32 ValidCount = 0;
+	for (ABaseItem* I : Inventory)
+	{
+		if (I)
+			ValidCount++;
+	}
+
+	if (ValidCount >= InventorySize)
 	{
 		ShowNotification(TEXT("Inventario pieno!"), 2.0f);
 		return false;
@@ -372,6 +389,14 @@ bool APROGETTOCharacter::AddItemToInventory(ABaseItem* Item)
 
 	Item->SetActorHiddenInGame(true);
 	Item->SetActorEnableCollision(false);
+
+	// --- UI refresh solo se visibile ---
+	if (InventoryWidgetInstance && InventoryWidgetInstance->IsVisible())
+	{
+		InventoryWidgetInstance->SetMyInventoryItems(Inventory, CurrentCarryWeight, MaxCarryWeight);
+		InventoryWidgetInstance->UpdateEquippedDisplay();
+	}
+
 	if (UStaticMeshComponent* MeshComp = Item->FindComponentByClass<UStaticMeshComponent>())
 	{
 		MeshComp->SetVisibility(false, true);
@@ -381,18 +406,31 @@ bool APROGETTOCharacter::AddItemToInventory(ABaseItem* Item)
 	return true;
 }
 
-void APROGETTOCharacter::RemoveItemFromInventory(ABaseItem* Item)
+bool APROGETTOCharacter::RemoveItemFromInventory(ABaseItem* Item)
 {
-	if (!Item)
-		return;
+	//if (!Item)
+		//return;
 
-	UE_LOG(LogTemp, Warning, TEXT("RemoveItemFromInventory: prima Inventory.Num()=%d"), Inventory.Num());
+	//UE_LOG(LogTemp, Warning, TEXT("RemoveItemFromInventory: prima Inventory.Num()=%d"), Inventory.Num());
 
-	Inventory.RemoveSingleSwap(Item);
+	////Inventory.RemoveSingleSwap(Item);
 
-	UE_LOG(LogTemp, Warning, TEXT("RemoveItemFromInventory: dopo Inventory.Num()=%d"), Inventory.Num());
+	//UE_LOG(LogTemp, Warning, TEXT("RemoveItemFromInventory: dopo Inventory.Num()=%d"), Inventory.Num());
 
-	CurrentCarryWeight = FMath::Max(0.f, CurrentCarryWeight - Item->Weight);
+	//CurrentCarryWeight = FMath::Max(0.f, CurrentCarryWeight - Item->Weight);
+
+	if (!Item) return false;
+	if (Inventory.Remove(Item) > 0)
+	{
+		Inventory.Remove(nullptr);  // elimina eventuali vuoti
+		CurrentCarryWeight -= Item->Weight;
+		if (InventoryWidgetInstance && InventoryWidgetInstance->IsVisible())
+		{
+			InventoryWidgetInstance->SetMyInventoryItems(Inventory, CurrentCarryWeight, MaxCarryWeight);
+		}
+		return true;
+	}
+	return false;
 
 }
 

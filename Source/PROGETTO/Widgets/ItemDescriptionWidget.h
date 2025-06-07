@@ -8,6 +8,8 @@
 #include "ItemDescriptionWidget.generated.h"
 
 class UInventoryWidget;
+class ABaseItem;
+class APROGETTOCharacter;
 
 
 UCLASS()

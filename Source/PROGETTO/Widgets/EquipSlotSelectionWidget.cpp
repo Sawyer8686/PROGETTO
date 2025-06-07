@@ -1,22 +1,26 @@
 #include "EquipSlotSelectionWidget.h"
 #include "Components/Button.h"
+#include "PROGETTO/Widgets/InventoryWidget.h"
+#include "Kismet/GameplayStatics.h"
 #include "PROGETTO/PROGETTOCharacter.h"
 #include "PROGETTO/Actors/BaseItem.h"
+#include "GameFramework/PlayerController.h"
 
 
 void UEquipSlotSelectionWidget::SetupForItem(ABaseItem* Item, APROGETTOCharacter* Character)
 {
+    if (!Item || !Character) return;
+
     PendingItem = Item;
     OwningCharacter = Character;
 
-    // 1) Disabilito tutti i bottoni di default
-    //if (HeadButton)      HeadButton->SetIsEnabled(false);
-    //if (RightHandButton) RightHandButton->SetIsEnabled(false);
-    //if (LeftHandButton)  LeftHandButton->SetIsEnabled(false);
-    //if (TorsoButton)     TorsoButton->SetIsEnabled(false);
-    //if (RightLegButton)  RightLegButton->SetIsEnabled(false);
-    //if (LeftLegButton)   LeftLegButton->SetIsEnabled(false);
+    ParentInventory = Character->InventoryWidgetInstance;
+    if (!ParentInventory) return;
 
+    // Disable inventory behind
+    DisableInventoryBehind();
+
+    // Disable all buttons
     PendingItem->SetButtonDisabledBlack(HeadButton);
     PendingItem->SetButtonDisabledBlack(RightHandButton);
     PendingItem->SetButtonDisabledBlack(LeftHandButton);
@@ -62,6 +66,9 @@ void UEquipSlotSelectionWidget::SetupForItem(ABaseItem* Item, APROGETTOCharacter
             break;
         }
     }
+
+    // Mostra il modal
+    MyShowModal();
 }
 
 void UEquipSlotSelectionWidget::NativeConstruct()
@@ -92,6 +99,7 @@ void UEquipSlotSelectionWidget::OnHeadClicked()
     }
 
     RemoveFromParent();
+    EnableInventoryBehind();
 }
 
 void UEquipSlotSelectionWidget::OnRightHandClicked()
@@ -110,6 +118,7 @@ void UEquipSlotSelectionWidget::OnRightHandClicked()
         );
     }
     RemoveFromParent();
+    EnableInventoryBehind();
 }
 
 void UEquipSlotSelectionWidget::OnLeftHandClicked()
@@ -128,6 +137,7 @@ void UEquipSlotSelectionWidget::OnLeftHandClicked()
         );
     }
     RemoveFromParent();
+    EnableInventoryBehind();
 }
 
 void UEquipSlotSelectionWidget::OnTorsoClicked()
@@ -146,6 +156,7 @@ void UEquipSlotSelectionWidget::OnTorsoClicked()
         );
     }
     RemoveFromParent();
+    EnableInventoryBehind();
 }
 
 void UEquipSlotSelectionWidget::OnRightLegClicked()
@@ -164,6 +175,7 @@ void UEquipSlotSelectionWidget::OnRightLegClicked()
         );
     }
     RemoveFromParent();
+    EnableInventoryBehind();
 }
 
 void UEquipSlotSelectionWidget::OnLeftLegClicked()
@@ -182,5 +194,71 @@ void UEquipSlotSelectionWidget::OnLeftLegClicked()
         );
     }
     RemoveFromParent();
+    EnableInventoryBehind();
 }
+
+void UEquipSlotSelectionWidget::DisableInventoryBehind()
+{
+    if (OwningCharacter && OwningCharacter->InventoryWidgetInstance)
+    {
+        OwningCharacter->InventoryWidgetInstance->SetIsEnabled(false);
+    }
+}
+
+void UEquipSlotSelectionWidget::EnableInventoryBehind()
+{
+    if (OwningCharacter && OwningCharacter->InventoryWidgetInstance)
+    {
+        OwningCharacter->InventoryWidgetInstance->SetIsEnabled(true);
+    }
+}
+
+void UEquipSlotSelectionWidget::HandleSlotSelection(EEquipmentSlot ASlot)
+{
+    if (OwningCharacter && PendingItem)
+    {
+        OwningCharacter->EquipItemToSlot(PendingItem, ASlot);
+        if (OwningCharacter->InventoryWidgetInstance)
+        {
+            OwningCharacter->InventoryWidgetInstance->SetMyInventoryItems(
+                OwningCharacter->Inventory,
+                OwningCharacter->CurrentCarryWeight,
+                OwningCharacter->MaxCarryWeight
+            );
+        }
+    }
+    CloseModal();
+    
+}
+
+void UEquipSlotSelectionWidget::MyShowModal()
+{
+    AddToViewport(250);
+    if (APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0))
+    {
+        PC->SetShowMouseCursor(true);
+        FInputModeUIOnly Mode;
+        Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+        Mode.SetWidgetToFocus(TakeWidget());
+        PC->SetInputMode(Mode);
+    }
+}
+
+void UEquipSlotSelectionWidget::CloseModal()
+{
+    EnableInventoryBehind();
+    RemoveFromParent();
+    if (OwningCharacter && OwningCharacter->InventoryWidgetInstance)
+    {
+        if (APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController()))
+        {
+            PC->SetShowMouseCursor(true);
+            FInputModeUIOnly Mode;
+            Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+            Mode.SetWidgetToFocus(OwningCharacter->InventoryWidgetInstance->TakeWidget());
+            PC->SetInputMode(Mode);
+        }
+    }
+}
+
 

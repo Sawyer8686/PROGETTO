@@ -158,7 +158,7 @@ void UItemEntryWidget::OnUseButtonClicked()
 void UItemEntryWidget::OnDescriptionButtonClicked()
 {
 	
-	if (!Item || !ItemDescriptionWidgetClass)
+	/*if (!Item || !ItemDescriptionWidgetClass)
 		return;
 
 	// Se il description è già aperto, lo chiudo e resetto
@@ -235,10 +235,58 @@ void UItemEntryWidget::OnDescriptionButtonClicked()
 		}
 
 
+	}*/
+
+	if (!ItemDescriptionWidgetClass || !ParentInventoryWidget || !Item)
+		return;
+
+	APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0);
+	if (!PC)
+		return;
+
+	// Se il description è già aperto, chiudilo
+	if (ItemDescriptionInstance && ItemDescriptionInstance->IsInViewport())
+	{
+		ItemDescriptionInstance->RemoveFromParent();
+		ParentInventoryWidget->UnregisterOpenDescription(ItemDescriptionInstance);
+		ParentInventoryWidget->SetIsEnabled(true);
+
+		// Ripristina focus all'inventario
+		PC->SetShowMouseCursor(true);
+		FInputModeUIOnly UIInput;
+		UIInput.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		UIInput.SetWidgetToFocus(ParentInventoryWidget->TakeWidget());
+		PC->SetInputMode(UIInput);
+
+		ItemDescriptionInstance = nullptr;
+		return;
 	}
 
-	
-	
+	// Crea un nuovo description widget
+	ItemDescriptionInstance = CreateWidget<UItemDescriptionWidget>(PC, ItemDescriptionWidgetClass);
+	if (!ItemDescriptionInstance)
+		return;
+
+	// Imposta parent e registra
+	ItemDescriptionInstance->SetParentInventoryWidget(ParentInventoryWidget);
+	ParentInventoryWidget->RegisterOpenDescription(ItemDescriptionInstance);
+	ParentInventoryWidget->SetIsEnabled(false);
+
+	// Mostra il widget
+	ItemDescriptionInstance->AddToViewport(101);
+
+	// Imposta il testo della descrizione dall'oggetto
+	ItemDescriptionInstance->SetDescriptionText(Item->Description);
+
+	// Focalizza solo il CloseButton
+	if (UButton* CloseBtn = ItemDescriptionInstance->GetCloseButton())
+	{
+		PC->SetShowMouseCursor(true);
+		FInputModeUIOnly UIInput;
+		UIInput.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		UIInput.SetWidgetToFocus(CloseBtn->TakeWidget());
+		PC->SetInputMode(UIInput);
+	}
 }
 
 void UItemEntryWidget::OnDiscardButtonClicked()
