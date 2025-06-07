@@ -13,7 +13,7 @@ class UItemDescriptionWidget;
 class APROGETTOCharacter;
 class ATorchActor;
 class ABatteryActor;
-class UInventoryWidget; // forward-declare
+class UInventoryWidget; 
 
 UCLASS()
 class PROGETTO_API UItemEntryWidget : public UUserWidget
@@ -24,11 +24,10 @@ public:
 
     //VARIABILI E RIFERIMENTI
 
-    /** Classe del widget di selezione slot (impostata in Blueprint) */
+    
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Equip")
     TSubclassOf<UEquipSlotSelectionWidget> EquipSlotSelectionWidgetClass;
 
-    /** Istanza corrente aperta del widget di selezione */
     UEquipSlotSelectionWidget* EquipSlotSelectionWidgetInstance = nullptr;
 
     UPROPERTY(meta = (BindWidget))
@@ -58,17 +57,17 @@ public:
     UPROPERTY()
     ATorchActor* EquippedTorch;
 
-    // Riferimento al genitore (UInventoryWidget) che lo ha creato
-    UPROPERTY()
     UInventoryWidget* ParentInventoryWidget;
 
-    // Per tenere traccia dell’istanza di descrizione aperta da questo Entry
     UPROPERTY()
     UItemDescriptionWidget* ItemDescriptionInstance;
 
 	//FUNZIONI
 
-    // Serve per registrare il parent quando creo questo Entry
+    /** Assegna il widget Inventory padre */
+    UFUNCTION(BlueprintCallable, Category = "Item Entry")
+    void SetParentInventoryWidget(UInventoryWidget* Parent) { ParentInventoryWidget = Parent; }
+
     void SetInventoryWidgetParent(UInventoryWidget* Parent);
 
     UFUNCTION()
@@ -91,6 +90,6 @@ public:
 
     virtual void NativeConstruct() override;
 
-    void UpdateEquipButtonText();
+    
 };
 

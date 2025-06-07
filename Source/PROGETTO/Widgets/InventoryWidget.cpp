@@ -83,7 +83,7 @@ void UInventoryWidget::UpdateEquippedDisplay()
 
 void UInventoryWidget::OnCloseButtonClicked()
 {
-	if (!OwningCharacter || !IsVisible())
+	/*if (!OwningCharacter || !IsVisible())
 		return;
 
 	// Chiudo eventuali description aperti
@@ -103,45 +103,122 @@ void UInventoryWidget::OnCloseButtonClicked()
 			OwningCharacter->StatsWidgetInstance->SetVisibility(ESlateVisibility::Visible);
 
 		if (OwningCharacter->BackpackStatusWidgetInstance)
+			OwningCharacter->BackpackStatusWidgetInstance->SetVisibility(ESlateVisibility::Visible);*/
+
+	if (!OwningCharacter || !IsVisible())
+		return;
+
+	// Close all descriptions
+	ClearOpenDescriptions();
+
+	// Hide inventory
+	SetVisibility(ESlateVisibility::Hidden);
+
+	if (APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController()))
+	{
+		OwningCharacter->EnableInput(PC);
+		PC->SetShowMouseCursor(false);
+		PC->SetInputMode(FInputModeGameOnly());
+
+		if (OwningCharacter->StatsWidgetInstance)
+			OwningCharacter->StatsWidgetInstance->SetVisibility(ESlateVisibility::Visible);
+
+		if (OwningCharacter->BackpackStatusWidgetInstance)
 			OwningCharacter->BackpackStatusWidgetInstance->SetVisibility(ESlateVisibility::Visible);
 	}
+	
 }
 
 void UInventoryWidget::SetMyInventoryItems(const TArray<ABaseItem*>& Items, float CurrentWeight, float MaxWeight)
 {
-	
-	if (!ItemsGrid)
-		return;
+	/*if (!ItemsGrid) return;
 
-	// Chiudo prima eventuali description-widget aperti
-	ClearOpenDescriptions();
-
+	// 1) Raccogli solo i puntatori non-null
 	TArray<ABaseItem*> Filtered;
 	Filtered.Reserve(Items.Num());
 	for (ABaseItem* It : Items)
 	{
-		if (IsValid(It))
-			Filtered.Add(It);	
+		if (It)
+			Filtered.Add(It);
+		else
+			UE_LOG(LogTemp, Warning, TEXT("SetMyInventoryItems: trovato nullptr in Inventory!"));
 	}
-	
+	UE_LOG(LogTemp, Warning, TEXT("SetMyInventoryItems: validi = %d"), Filtered.Num());  // debug
+
+	// 2) Ripulisci la griglia
 	ItemsGrid->ClearChildren();
 
+	// 3) Popola fino a MaxInventorySlots
+	const int32 Columns = 5;  // o estrai da blueprint
 	for (int32 i = 0; i < MaxInventorySlots; ++i)
 	{
 		UItemEntryWidget* Entry = CreateWidget<UItemEntryWidget>(this, ItemEntryWidgetClass);
 		if (!Entry)
 			continue;
 
-		// Imposto il parent per registrare le descrizioni aperte
-		//Entry->SetParentInventoryWidget(this);
+		// Associa il parent per i description-popup
+		Entry->SetInventoryWidgetParent(this);
 
-		if (i < Items.Num() && Items[i])
-			Entry->SetupFromItem(Items[i], OwningCharacter);
+		if (i < Filtered.Num())
+		{
+			// usa Filtered (validi) non Items
+			Entry->SetupFromItem(Filtered[i], OwningCharacter);
+		}
 		else
+		{
 			Entry->DisplayEmptySlot();
+		}
 
-		int32 Row = i / 5;
-		int32 Col = i % 5;
+		const int32 Row = i / Columns;
+		const int32 Col = i % Columns;
+		ItemsGrid->AddChildToUniformGrid(Entry, Row, Col);
+	}
+
+	// 4) Aggiorna peso
+	if (WeightText)
+	{
+		WeightText->SetText(FText::FromString(
+			FString::Printf(TEXT("Peso: %.1f / %.1f"), CurrentWeight, MaxWeight)
+		));
+	}*/
+
+	if (!ItemsGrid)
+		return;
+
+	// Close any open descriptions before rebuilding
+	ClearOpenDescriptions();
+
+	// Filter only valid pointers
+	TArray<ABaseItem*> Filtered;
+	Filtered.Reserve(Items.Num());
+	for (ABaseItem* It : Items)
+	{
+		if (It)
+			Filtered.Add(It);
+	}
+
+	ItemsGrid->ClearChildren();
+	const int32 NumValid = Filtered.Num();
+	const int32 Columns = 5;
+	for (int32 i = 0; i < MaxInventorySlots; ++i)
+	{
+		UItemEntryWidget* Entry = CreateWidget<UItemEntryWidget>(this, ItemEntryWidgetClass);
+		if (!Entry)
+			continue;
+
+		Entry->SetInventoryWidgetParent(this);
+
+		if (i < NumValid)
+		{
+			Entry->SetupFromItem(Filtered[i], OwningCharacter);
+		}
+		else
+		{
+			Entry->DisplayEmptySlot();
+		}
+
+		int32 Row = i / Columns;
+		int32 Col = i % Columns;
 		ItemsGrid->AddChildToUniformGrid(Entry, Row, Col);
 	}
 
@@ -151,13 +228,22 @@ void UInventoryWidget::SetMyInventoryItems(const TArray<ABaseItem*>& Items, floa
 			FString::Printf(TEXT("Peso: %.1f / %.1f"), CurrentWeight, MaxWeight)
 		));
 	}
-}
+	}
+
 
 void UInventoryWidget::RegisterOpenDescription(UItemDescriptionWidget* Description)
 {
 	if (Description)
 	{
 		OpenDescriptionWidgets.Add(Description);
+	}
+}
+
+void UInventoryWidget::UnregisterOpenDescription(UItemDescriptionWidget* Description)
+{
+	if (Description)
+	{
+		OpenDescriptionWidgets.RemoveSingle(Description);
 	}
 }
 
@@ -172,22 +258,6 @@ void UInventoryWidget::ClearOpenDescriptions()
 	}
 	OpenDescriptionWidgets.Empty();
 }
-
-/*void UInventoryWidget::RegisterDescriptionWidget(UItemDescriptionWidget* DescWidget)
-{
-	if (!DescWidget)
-		return;
-
-	if (!OpenDescriptionWidgets.Contains(DescWidget))
-	{
-		OpenDescriptionWidgets.Add(DescWidget);
-	}
-}
-
-void UInventoryWidget::UnregisterDescriptionWidget(UItemDescriptionWidget* DescWidget)
-{
-	OpenDescriptionWidgets.Remove(DescWidget);
-}*/
 
 void UInventoryWidget::NativeConstruct()
 {

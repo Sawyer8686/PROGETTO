@@ -17,9 +17,6 @@ void UItemEntryWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	UE_LOG(LogTemp, Warning, TEXT("UItemEntryWidget::NativeConstruct() eseguito. EquipButton = %s"),
-		EquipButton ? TEXT("VALIDO") : TEXT("nullptr"));
-
 	if (UseButton)
 	{
 		UseButton->OnClicked.AddDynamic(this, &UItemEntryWidget::OnUseButtonClicked);
@@ -36,84 +33,6 @@ void UItemEntryWidget::NativeConstruct()
 	{
 		EquipButton->OnClicked.AddDynamic(this, &UItemEntryWidget::OnEquipButtonClicked);
 	}
-}
-
-void UItemEntryWidget::UpdateEquipButtonText()
-{
-	/*if (!EquipButton || !Item)
-		return;
-
-	UTextBlock* ButtonText = Cast<UTextBlock>(EquipButton->GetChildAt(0));
-	if (!ButtonText)
-		return;
-
-	// Ora uso un flag generico bIsEquipped di BaseItem:
-	if (Item->bIsEquipped)
-		ButtonText->SetText(FText::FromString(TEXT("Unequip")));
-	else
-		ButtonText->SetText(FText::FromString(TEXT("Equip")));*/
-
-	/*if (!OwningCharacter)
-		return;
-
-	// Prendo la mappa <slot ? item> dal Character
-	TMap<EEquipmentSlot, ABaseItem*>& MapEquip = OwningCharacter->EquippedItemSlots;
-
-	// Lambda per ottenere nome o “Nessuno”
-	auto GetNameOrNone = [&](EEquipmentSlot ChosenSlot)->FString
-		{
-			ABaseItem** Found = MapEquip.Find(ChosenSlot);
-			if (Found && *Found)
-				return (*Found)->ItemName;
-			else
-				return FString(TEXT("Nessuno"));
-		};
-
-	// Per ognuno slot: scrivo il testo e mostro/nascondo il bottone
-	{
-		FString Name = GetNameOrNone(EEquipmentSlot::Head);
-		HeadEquippedText->SetText(FText::FromString(Name));
-		HeadUnequipButton->SetVisibility(
-			(Name != "Nessuno") ? ESlateVisibility::Visible : ESlateVisibility::Hidden
-		);
-	}
-	{
-		FString Name = GetNameOrNone(EEquipmentSlot::RightHand);
-		RightHandEquippedText->SetText(FText::FromString(Name));
-		RightHandUnequipButton->SetVisibility(
-			(Name != "Nessuno") ? ESlateVisibility::Visible : ESlateVisibility::Hidden
-		);
-	}
-	{
-		FString Name = GetNameOrNone(EEquipmentSlot::LeftHand);
-		LeftHandEquippedText->SetText(FText::FromString(Name));
-		LeftHandUnequipButton->SetVisibility(
-			(Name != "Nessuno") ? ESlateVisibility::Visible : ESlateVisibility::Hidden
-		);
-	}
-	{
-		FString Name = GetNameOrNone(EEquipmentSlot::Torso);
-		TorsoEquippedText->SetText(FText::FromString(Name));
-		TorsoUnequipButton->SetVisibility(
-			(Name != "Nessuno") ? ESlateVisibility::Visible : ESlateVisibility::Hidden
-		);
-	}
-	{
-		FString Name = GetNameOrNone(EEquipmentSlot::RightLeg);
-		RightLegEquippedText->SetText(FText::FromString(Name));
-		RightLegUnequipButton->SetVisibility(
-			(Name != "Nessuno") ? ESlateVisibility::Visible : ESlateVisibility::Hidden
-		);
-	}
-	{
-		FString Name = GetNameOrNone(EEquipmentSlot::LeftLeg);
-		LeftLegEquippedText->SetText(FText::FromString(Name));
-		LeftLegUnequipButton->SetVisibility(
-			(Name != "Nessuno") ? ESlateVisibility::Visible : ESlateVisibility::Hidden
-		);
-	}*/
-
-	
 }
 
 void UItemEntryWidget::SetupFromItem(ABaseItem* InItem, APROGETTOCharacter* InOwningCharacter)
@@ -153,8 +72,6 @@ void UItemEntryWidget::SetupFromItem(ABaseItem* InItem, APROGETTOCharacter* InOw
 		else
 			EquipButton->SetVisibility(ESlateVisibility::Collapsed);
 	}
-
-	UpdateEquipButtonText();
 }
 
 void UItemEntryWidget::DisplayEmptySlot()
@@ -240,38 +157,7 @@ void UItemEntryWidget::OnUseButtonClicked()
 
 void UItemEntryWidget::OnDescriptionButtonClicked()
 {
-	/*if (!Item || !ItemDescriptionWidgetClass)
-		return;
-
-	// Se non ho già un description aperto da questa entry, lo creo
-	if (!ItemDescriptionInstance)
-	{
-		ItemDescriptionInstance = CreateWidget<UItemDescriptionWidget>(GetWorld(), ItemDescriptionWidgetClass);
-		if (ItemDescriptionInstance)
-		{
-			// Impostiamo il testo
-			ItemDescriptionInstance->SetDescriptionText(Item->Description);
-			ItemDescriptionInstance->AddToViewport(100);
-
-			// Registro l'istanza aperta nel widget inventory
-			if (ParentInventoryWidget)
-			{
-				ParentInventoryWidget->RegisterOpenDescription(ItemDescriptionInstance);
-			}
-
-		}
-		else
-		{
-			// Chiudo il description aperto e deregistro
-			ItemDescriptionInstance->RemoveFromParent();
-			if (ParentInventoryWidget)
-			{
-				ParentInventoryWidget->ClearOpenDescriptions(); // o usa UnregisterOpenDescription se disponibile
-			}
-			ItemDescriptionInstance = nullptr;
-		}
-		}*/
-
+	
 	if (!Item || !ItemDescriptionWidgetClass)
 		return;
 
@@ -351,9 +237,9 @@ void UItemEntryWidget::OnDescriptionButtonClicked()
 
 	}
 
+	
+	
 }
-
-
 
 void UItemEntryWidget::OnDiscardButtonClicked()
 {
@@ -390,8 +276,7 @@ void UItemEntryWidget::OnEquipButtonClicked()
 		if (Item->bIsEquipped)
 		{
 			OwningCharacter->UnequipItem(Item);
-			UpdateEquipButtonText();
-
+	
 			return;
 		}
 

@@ -112,10 +112,6 @@ APROGETTOCharacter::APROGETTOCharacter()
 	MaxCarryWeight = 20.f;  // es. 20 kg
 	CurrentCarryWeight = 0.f;
 
-	// Inizializziamo i puntatori a nullptr
-	//InventoryWidgetInstance = nullptr;
-	
-
 }
 
 void APROGETTOCharacter::BeginPlay()
@@ -233,18 +229,11 @@ void APROGETTOCharacter::Tick(float DeltaTime)
 
 void APROGETTOCharacter::ToggleInventory()
 {
-	UE_LOG(LogTemp, Warning, TEXT("ToggleInventory: Inventory.Num() = %d"), Inventory.Num());
+	UE_LOG(LogTemp, Warning, TEXT("ToggleInventory: Widget ptr=%p, Inventory.Num=%d"), InventoryWidgetInstance, Inventory.Num());
 
 	if (!bHasBackpack || !InventoryWidgetClass)
 		return;
 
-	UE_LOG(LogTemp, Warning, TEXT("ToggleInventory: Inventory.Num()=%d"), Inventory.Num());
-	for (ABaseItem* It : Inventory)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("  -> Inventory item: %s (%p)"), It ? *It->ItemName : TEXT("nullptr"), It);
-	}
-
-	
 	if (!InventoryWidgetInstance)
 	{
 		InventoryWidgetInstance = CreateWidget<UInventoryWidget>(GetWorld(), InventoryWidgetClass);
@@ -300,12 +289,13 @@ void APROGETTOCharacter::ToggleInventory()
 
 		InventoryWidgetInstance->FocusFirstButton();
 
-		// Nascondo Stats e BackpackStatus mentre l'inventario è aperto
+		
 		if (StatsWidgetInstance)
 			StatsWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
 		if (BackpackStatusWidgetInstance)
 			BackpackStatusWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
 	}
+
 
 }
 

@@ -1,6 +1,7 @@
 #include "ItemDescriptionWidget.h"
 #include "Components/Border.h"
 #include "Components/TextBlock.h"
+#include "Kismet/GameplayStatics.h"
 #include "PROGETTO/Widgets/InventoryWidget.h"
 #include "Components/Button.h"
 
@@ -15,7 +16,6 @@ void UItemDescriptionWidget::NativeConstruct()
 
 	if (BackgroundBorder)
 	{
-		
 		FLinearColor SfondoColor = FLinearColor(0.1f, 0.1f, 0.3f, 0.8f);
 		BackgroundBorder->SetBrushColor(SfondoColor);	
 	}
@@ -37,13 +37,36 @@ void UItemDescriptionWidget::SetParentInventoryWidget(UInventoryWidget* Parent)
 void UItemDescriptionWidget::OnCloseButtonClicked()
 {
 	// Deregistro questa descrizione dal widget Inventory
-	if (ParentInventoryWidget)
-	{
-		ParentInventoryWidget->ClearOpenDescriptions();
-	}
+	//if (ParentInventoryWidget)
+	//{
+		//ParentInventoryWidget->ClearOpenDescriptions();
+	//}
 
 	// Rimuovo il widget dal viewport
+	//RemoveFromParent();
+
+	// Restore inventory input
+	if (ParentInventoryWidget)
+	{
+		ParentInventoryWidget->SetIsEnabled(true);
+		ParentInventoryWidget->UnregisterOpenDescription(this);
+	}
+
+	// Remove this modal
 	RemoveFromParent();
+
+	// Reset input mode to inventory UI only
+	if (APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0))
+	{
+		PC->SetShowMouseCursor(true);
+		FInputModeUIOnly UIInput;
+		UIInput.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		if (ParentInventoryWidget)
+		{
+			UIInput.SetWidgetToFocus(ParentInventoryWidget->TakeWidget());
+		}
+		PC->SetInputMode(UIInput);
+	}
 }
 
 

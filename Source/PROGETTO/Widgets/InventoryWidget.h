@@ -81,13 +81,11 @@ public:
 
 	void SetMyInventoryItems(const TArray<ABaseItem*>& Items, float CurrentWeight, float MaxWeight);
 
-	//void RegisterDescriptionWidget(UItemDescriptionWidget* DescWidget);
-
-	//void UnregisterDescriptionWidget(UItemDescriptionWidget* DescWidget);
-
-	// Registra un description-widget aperto dall'entry
 	UFUNCTION()
 	void RegisterOpenDescription(UItemDescriptionWidget* Description);
+
+	UFUNCTION()
+	void UnregisterOpenDescription(UItemDescriptionWidget* Description);
 
 	// Chiude e pulisce tutti i description-widget aperti
 	UFUNCTION()
@@ -95,9 +93,6 @@ public:
 
 	UPROPERTY()
 	TArray<UItemDescriptionWidget*> OpenDescriptionWidgets;
-
-	//UPROPERTY(meta = (BindWidget))
-	//class UVerticalBox* ItemsBox;
 
 	UPROPERTY(meta = (BindWidget))
 	class UUniformGridPanel* ItemsGrid;
@@ -122,7 +117,6 @@ public:
 	UPROPERTY()
 	class APROGETTOCharacter* OwningCharacter;
 
-	/** Inizializza il widget con riferimento al personaggio proprietario */
 	void SetOwningCharacter(APROGETTOCharacter* Character) { OwningCharacter = Character; }
 
 	void FocusFirstButton();

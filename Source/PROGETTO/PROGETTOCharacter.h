@@ -133,7 +133,7 @@ public:
 	TSubclassOf<UInventoryWidget> InventoryWidgetClass;
 
 	UPROPERTY()
-	UInventoryWidget* InventoryWidgetInstance;
+	UInventoryWidget* InventoryWidgetInstance = nullptr;
 
 	UFUNCTION()
 	void ToggleInventory();
