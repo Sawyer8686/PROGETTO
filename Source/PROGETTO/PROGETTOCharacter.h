@@ -34,33 +34,6 @@ class UParticleSystem;
 
 
 
-UENUM(BlueprintType)
-enum class EFootstepSurface : uint8
-{
-	Grass      UMETA(DisplayName = "Grass"),
-	Concrete   UMETA(DisplayName = "Concrete"),
-	Wood       UMETA(DisplayName = "Wood"),
-	Metal      UMETA(DisplayName = "Metal"),
-	Other      UMETA(DisplayName = "Other")
-};
-
-USTRUCT(BlueprintType)
-struct FFootstepData
-{
-	GENERATED_BODY()
-
-	// Il tipo di superficie
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	EFootstepSurface SurfaceType;
-
-	// Array di suoni associati a questa superficie
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	TArray<USoundBase*> FootstepSounds;
-};
-
-
-
-
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
 UCLASS(config=Game)
@@ -80,17 +53,15 @@ public:
 	UCameraComponent* FollowCamera;
 
 
-
+#pragma region INPUT
 	
 	/** MappingContext */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputMappingContext* DefaultMappingContext;
-
-	/** Jump Input Action */
+	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* JumpAction;
 
-	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* IA_TogglePower;
 
@@ -113,6 +84,11 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* MainInteraction;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+	class UInputAction* RunAction;
+
+#pragma endregion INPUT
 
 	void HandleInteraction();
 
@@ -148,9 +124,6 @@ public:
 	void GiveBackpack();
 
 	bool AddItemToInventory(ABaseItem* Item);
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
-	class UInputAction* RunAction;
 
 	UPROPERTY(BlueprintReadOnly)
 	bool bHasTorch;

@@ -33,20 +33,17 @@ DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
 APROGETTOCharacter::APROGETTOCharacter()
 {
-	// Set size for collision capsule
+	
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
 
-	// Don't rotate when the controller rotates. Let that just affect the camera.
+	
 	bUseControllerRotationPitch = false;
 	bUseControllerRotationYaw = false;
 	bUseControllerRotationRoll = false;
 
-	// Configure character movement
 	GetCharacterMovement()->bOrientRotationToMovement = true; // Character moves in the direction of input...	
 	GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f); // ...at this rotation rate
 
-	// Note: For faster iteration times these variables, and many more, can be tweaked in the Character Blueprint
-	// instead of recompiling to adjust them
 	GetCharacterMovement()->JumpZVelocity = 700.f;
 	GetCharacterMovement()->AirControl = 0.35f;
 	GetCharacterMovement()->MaxWalkSpeed = 150.f;
@@ -54,36 +51,30 @@ APROGETTOCharacter::APROGETTOCharacter()
 	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
 
-	// Create a camera boom (pulls in towards the player if there is a collision)
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->TargetArmLength = 400.0f; // The camera follows at this distance behind the character	
-	CameraBoom->bUsePawnControlRotation = true; // Rotate the arm based on the controller
+	CameraBoom->TargetArmLength = 400.0f; 	
+	CameraBoom->bUsePawnControlRotation = true; 
 
-	// Create a follow camera
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
-	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
-	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
+	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); 
+	FollowCamera->bUsePawnControlRotation = false; 
 
-	// ─── Creiamo lo SpotLight per simulare la torcia ───
 	CharacterTorchSpot = CreateDefaultSubobject<USpotLightComponent>(TEXT("CharacterTorchSpot"));
 	CharacterTorchSpot->SetupAttachment(FollowCamera);
-	CharacterTorchSpot->bUseInverseSquaredFalloff = false; // luce più “uniforme” come fascio di torcia
-	CharacterTorchSpot->SetIntensity(8000.f);              // intensità di base (modificabile)
-	CharacterTorchSpot->SetLightColor(FLinearColor::White);
-	CharacterTorchSpot->SetAttenuationRadius(1000.f);      // fino a dove arriva
-	CharacterTorchSpot->SetInnerConeAngle(20.0f);          // angolo interno del cono (in gradi)
-	CharacterTorchSpot->SetOuterConeAngle(30.0f);          // angolo esterno del cono
-	CharacterTorchSpot->SetVisibility(false);              // parte da spenta
+	CharacterTorchSpot->bUseInverseSquaredFalloff = false; 
+	CharacterTorchSpot->SetAttenuationRadius(1000.f);      
+	CharacterTorchSpot->SetInnerConeAngle(20.0f);          
+	CharacterTorchSpot->SetOuterConeAngle(30.0f);         
+	CharacterTorchSpot->SetVisibility(false);             
 
 	bHasTorchEquipped = false;
 	EquippedTorch = nullptr;
 
-	// --- Inizializzazione variabili batteria ---
 	MaxBatteryEnergy = 100.0f;
 	CurrentBatteryEnergy = MaxBatteryEnergy;
-	BatteryDrainInterval = 1.0f;  // ogni secondo
-	BatteryDrainAmount = 5.0f;  // scalare 1 unità ogni tick
+	BatteryDrainInterval = 1.0f;  
+	BatteryDrainAmount = 5.0f;  
 	bTorchIsOn = false;
 	TorchBatteryWidgetInstance = nullptr;
 
@@ -109,7 +100,7 @@ APROGETTOCharacter::APROGETTOCharacter()
 	InventorySize = 5;
 	bHasBackpack = false;
 
-	MaxCarryWeight = 20.f;  // es. 20 kg
+	MaxCarryWeight = 20.f;  
 	CurrentCarryWeight = 0.f;
 
 }
@@ -163,10 +154,10 @@ void APROGETTOCharacter::Tick(float DeltaTime)
 		else
 		{
 			Stamina = 0.f;
-			StopRunning(); // forza stop corsa
+			StopRunning(); 
 		}
 
-		// Se va sotto il 50%, blocca input corsa
+		
 		if (Stamina / MaxStamina < 0.5f)
 		{
 			bStaminaSottoSoglia = true;
@@ -174,7 +165,7 @@ void APROGETTOCharacter::Tick(float DeltaTime)
 	}
 	else
 	{
-		// Ritardo prima della rigenerazione
+		
 		if (!bCanRecoverStamina)
 		{
 			TimeSinceStoppedRunning += DeltaTime;
@@ -184,12 +175,12 @@ void APROGETTOCharacter::Tick(float DeltaTime)
 			}
 		}
 
-		// Rigenerazione
+	
 		if (bCanRecoverStamina && Stamina < MaxStamina)
 		{
 			Stamina += DeltaTime * 5.0f;
 
-			// Se supera 50%, riabilita corsa
+			
 			if (Stamina / MaxStamina >= 0.5f)
 			{
 				bStaminaSottoSoglia = false;
