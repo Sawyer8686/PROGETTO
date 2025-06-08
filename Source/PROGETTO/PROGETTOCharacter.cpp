@@ -102,6 +102,10 @@ APROGETTOCharacter::APROGETTOCharacter()
 	MaxCarryWeight = 20.f;  
 	CurrentCarryWeight = 0.f;
 
+	BackpackPickupSound = nullptr;
+	InventoryOpenSound = nullptr;
+	InventoryCloseSound = nullptr;
+
 }
 
 void APROGETTOCharacter::BeginPlay()
@@ -221,6 +225,11 @@ void APROGETTOCharacter::ToggleInventory()
 			InventoryWidgetInstance->OwningCharacter = this;
 			InventoryWidgetInstance->AddToViewport(100);
 			InventoryWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
+			// Suono apertura inventario
+			if (InventoryOpenSound)
+			{
+				UGameplayStatics::PlaySound2D(this, InventoryOpenSound);
+			}
 		}
 	}
 
@@ -236,6 +245,11 @@ void APROGETTOCharacter::ToggleInventory()
 	{
 		
 		InventoryWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
+		// Chiusura
+		if (InventoryCloseSound)
+		{
+			UGameplayStatics::PlaySound2D(this, InventoryCloseSound);
+		}
 
 		EnableInput(PC);
 		PC->SetShowMouseCursor(false);
@@ -248,16 +262,12 @@ void APROGETTOCharacter::ToggleInventory()
 	else
 	{
 		
-		//InventoryWidgetInstance->SetMyInventoryItems(
-			//Inventory,
-			//CurrentCarryWeight,
-			//MaxCarryWeight
-		//);
-
-
 		InventoryWidgetInstance->UpdateEquippedDisplay();
 		InventoryWidgetInstance->SetVisibility(ESlateVisibility::Visible);
-
+		if (InventoryOpenSound)
+		{
+			UGameplayStatics::PlaySound2D(this, InventoryOpenSound);
+		}
 		InventoryWidgetInstance->SetMyInventoryItems(
 			Inventory,
 			CurrentCarryWeight,
@@ -384,18 +394,9 @@ bool APROGETTOCharacter::AddItemToInventory(ABaseItem* Item)
 
 bool APROGETTOCharacter::RemoveItemFromInventory(ABaseItem* Item)
 {
-	//if (!Item)
-		//return;
-
-	//UE_LOG(LogTemp, Warning, TEXT("RemoveItemFromInventory: prima Inventory.Num()=%d"), Inventory.Num());
-
-	////Inventory.RemoveSingleSwap(Item);
-
-	//UE_LOG(LogTemp, Warning, TEXT("RemoveItemFromInventory: dopo Inventory.Num()=%d"), Inventory.Num());
-
-	//CurrentCarryWeight = FMath::Max(0.f, CurrentCarryWeight - Item->Weight);
 
 	if (!Item) return false;
+
 	if (Inventory.Remove(Item) > 0)
 	{
 		Inventory.Remove(nullptr);  // elimina eventuali vuoti
@@ -719,6 +720,12 @@ void APROGETTOCharacter::UnequipItem(ABaseItem* Item)
 
 void APROGETTOCharacter::GiveBackpack()
 {
+	// Riproduce il suono di raccolta zaino
+	if (BackpackPickupSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, BackpackPickupSound, GetActorLocation());
+	}
+
 	bHasBackpack = true;
 }
 

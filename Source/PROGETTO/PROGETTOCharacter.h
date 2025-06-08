@@ -90,6 +90,17 @@ public:
 #pragma endregion INPUT
 
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio")
+	USoundBase* BackpackPickupSound;
+
+	/** Suono riprodotto all'apertura dell'inventario */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio")
+	USoundBase* InventoryOpenSound;
+
+	/** Suono riprodotto alla chiusura dell'inventario */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio")
+	USoundBase* InventoryCloseSound;
+
 	void HandleInteraction();
 
 	UPROPERTY(BlueprintReadOnly, Category = "Equipment")

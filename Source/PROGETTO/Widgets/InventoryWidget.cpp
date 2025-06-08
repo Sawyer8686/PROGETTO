@@ -90,6 +90,10 @@ void UInventoryWidget::OnCloseButtonClicked()
 	ClearOpenDescriptions();
 
 	SetVisibility(ESlateVisibility::Hidden);
+	if (OwningCharacter->InventoryCloseSound)
+	{
+		UGameplayStatics::PlaySound2D(this, OwningCharacter->InventoryCloseSound);
+	}
 
 	if (APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController()))
 	{
