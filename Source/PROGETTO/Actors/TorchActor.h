@@ -13,8 +13,12 @@ class PROGETTO_API ATorchActor : public ABaseItem
     GENERATED_BODY()
 
 public:
+
     ATorchActor();
+
     bool bIsOn;
+
+    virtual void MainInteract(AActor* Interactor) override;
 
 };
 

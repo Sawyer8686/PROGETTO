@@ -10,7 +10,6 @@
 #include "Blueprint/UserWidget.h"
 #include "PROGETTO/Actors/BaseItem.h"
 #include "Widgets/InventoryWidget.h"
-#include "Widgets/BackpackStatusWidget.h"
 #include "PROGETTO/Actors/TorchActor.h"
 #include "PROGETTO/Actors/BackpackActor.h"
 #include "PROGETTO/Widgets/TorchBatteryWidget.h"
@@ -90,18 +89,14 @@ public:
 
 #pragma endregion INPUT
 
+
 	void HandleInteraction();
 
-	/** Mappa di quali oggetti sono equipaggiati in ciascuno slot */
 	UPROPERTY(BlueprintReadOnly, Category = "Equipment")
 	TMap<EEquipmentSlot, ABaseItem*> EquippedItemSlots;
 
 	UFUNCTION(BlueprintCallable, Category = "Equipment")
 	bool EquipItemToSlot(ABaseItem* Item, EEquipmentSlot Slot);
-
-	// Se vuoi aggiungere particelle (facoltativo)
-	UPROPERTY(EditAnywhere, Category = "Footsteps")
-	UParticleSystem* FootstepParticle;
 
 	UPROPERTY()
 	bool bHasBackpack;
@@ -351,12 +346,6 @@ public:
 
 	UFUNCTION()
 	void DropBackpack();
-
-	UPROPERTY(EditDefaultsOnly, Category = "UI")
-	TSubclassOf<class UBackpackStatusWidget> BackpackStatusWidgetClass;
-
-	UPROPERTY()
-	UBackpackStatusWidget* BackpackStatusWidgetInstance;
 
 	UFUNCTION()
 	bool RemoveItemFromInventory(ABaseItem* Item);

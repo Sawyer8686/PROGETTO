@@ -45,8 +45,6 @@ void AKeyActor::MainInteract(AActor* Interactor)
     if (APROGETTOCharacter* Player = Cast<APROGETTOCharacter>(Interactor))
     {
         bool bAdded = Player->AddItemToInventory(this);
-        UE_LOG(LogTemp, Warning, TEXT("KeyActor::MainInteract: tentativo AddItemToInventory => %s"),
-            bAdded ? TEXT("OK") : TEXT("FAIL"));
         
         if (bAdded)
         {

@@ -79,6 +79,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
 	void UpdateEquippedDisplay();
 
+	UFUNCTION()
 	void SetMyInventoryItems(const TArray<ABaseItem*>& Items, float CurrentWeight, float MaxWeight);
 
 	UFUNCTION()
@@ -120,5 +121,11 @@ public:
 	void SetOwningCharacter(APROGETTOCharacter* Character) { OwningCharacter = Character; }
 
 	void FocusFirstButton();
+
+	UPROPERTY(meta = (BindWidget))
+	class UButton* DropBackpackButton;
+
+	UFUNCTION()
+	void OnDropBackpackClicked();
 
 };

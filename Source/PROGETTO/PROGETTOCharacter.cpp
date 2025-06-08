@@ -16,7 +16,6 @@
 #include "PROGETTO/Interfaces/ConsumeEnergy.h"
 #include "PROGETTO/Actors/BackpackActor.h"
 #include "Components/ProgressBar.h"
-#include "Widgets/BackpackStatusWidget.h"
 #include "PROGETTO/Actors/TorchActor.h"
 #include "PhysicalMaterials/PhysicalMaterial.h"
 #include "PROGETTO/Structs/Enums/EquipmentTypes.h"
@@ -99,7 +98,7 @@ APROGETTOCharacter::APROGETTOCharacter()
 
 	InventorySize = 5;
 	bHasBackpack = false;
-
+	
 	MaxCarryWeight = 20.f;  
 	CurrentCarryWeight = 0.f;
 
@@ -108,7 +107,6 @@ APROGETTOCharacter::APROGETTOCharacter()
 void APROGETTOCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-
 
 	CurrentHealth = MaxHealth;
 
@@ -128,16 +126,6 @@ void APROGETTOCharacter::BeginPlay()
 
 	StartHungerTimer();
 	StartThirstTimer();
-
-	if (BackpackStatusWidgetClass)
-	{
-		BackpackStatusWidgetInstance = CreateWidget<UBackpackStatusWidget>(GetWorld(), BackpackStatusWidgetClass);
-		if (BackpackStatusWidgetInstance)
-		{
-			BackpackStatusWidgetInstance->AddToViewport();
-			BackpackStatusWidgetInstance->SetBackpackStatusVisible(false);
-		}
-	}
 
 }
 
@@ -220,12 +208,12 @@ void APROGETTOCharacter::Tick(float DeltaTime)
 
 void APROGETTOCharacter::ToggleInventory()
 {
-	UE_LOG(LogTemp, Warning, TEXT("ToggleInventory: Widget ptr=%p, Inventory.Num=%d"), InventoryWidgetInstance, Inventory.Num());
+	
 
 	if (!bHasBackpack || !InventoryWidgetClass)
 		return;
 
-	if (!InventoryWidgetInstance)
+	if (!InventoryWidgetInstance )
 	{
 		InventoryWidgetInstance = CreateWidget<UInventoryWidget>(GetWorld(), InventoryWidgetClass);
 		if (InventoryWidgetInstance)
@@ -255,20 +243,25 @@ void APROGETTOCharacter::ToggleInventory()
 
 		
 		if (StatsWidgetInstance)
-			StatsWidgetInstance->SetVisibility(ESlateVisibility::Visible);
-		if (BackpackStatusWidgetInstance)
-			BackpackStatusWidgetInstance->SetVisibility(ESlateVisibility::Visible);
+			StatsWidgetInstance->SetVisibility(ESlateVisibility::Visible);	
 	}
 	else
 	{
 		
+		//InventoryWidgetInstance->SetMyInventoryItems(
+			//Inventory,
+			//CurrentCarryWeight,
+			//MaxCarryWeight
+		//);
+
+
+		InventoryWidgetInstance->UpdateEquippedDisplay();
+		InventoryWidgetInstance->SetVisibility(ESlateVisibility::Visible);
+
 		InventoryWidgetInstance->SetMyInventoryItems(
 			Inventory,
 			CurrentCarryWeight,
-			MaxCarryWeight
-		);
-		InventoryWidgetInstance->UpdateEquippedDisplay();
-		InventoryWidgetInstance->SetVisibility(ESlateVisibility::Visible);
+			MaxCarryWeight);
 
 		DisableInput(PC);
 		PC->SetShowMouseCursor(true);
@@ -283,10 +276,7 @@ void APROGETTOCharacter::ToggleInventory()
 		
 		if (StatsWidgetInstance)
 			StatsWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
-		if (BackpackStatusWidgetInstance)
-			BackpackStatusWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
 	}
-
 
 }
 
@@ -304,16 +294,9 @@ bool APROGETTOCharacter::AddItemToInventory(ABaseItem* Item)
 		return false;
 	}
 
-	///if (Inventory.Num() >= InventorySize)
-	//{
-		//ShowNotification(TEXT("Inventario pieno!"), 2.0f);
-		//return false;
-	//}
-
-	// Pulisci eventuali nullptr “sporchi”
 	Inventory.Remove(nullptr);
 
-	// Conta solo i puntatori non-null
+	
 	int32 ValidCount = 0;
 	for (ABaseItem* I : Inventory)
 	{
@@ -324,6 +307,7 @@ bool APROGETTOCharacter::AddItemToInventory(ABaseItem* Item)
 	if (ValidCount >= InventorySize)
 	{
 		ShowNotification(TEXT("Inventario pieno!"), 2.0f);
+		
 		return false;
 	}
 
@@ -340,6 +324,7 @@ bool APROGETTOCharacter::AddItemToInventory(ABaseItem* Item)
 		Key->SetActorEnableCollision(false);
 		Key->Mesh->SetVisibility(false, true);
 
+		
 		return true;
 	}
 
@@ -735,11 +720,6 @@ void APROGETTOCharacter::UnequipItem(ABaseItem* Item)
 void APROGETTOCharacter::GiveBackpack()
 {
 	bHasBackpack = true;
-
-	if (BackpackStatusWidgetInstance)
-	{
-		BackpackStatusWidgetInstance->SetBackpackStatusVisible(true);
-	}
 }
 
 TArray<ABaseItem*> APROGETTOCharacter::GetEquippedItems() const
@@ -785,12 +765,6 @@ void APROGETTOCharacter::DropBackpack()
 		// 4) Disabilito lo zaino nel personaggio
 		bHasBackpack = false;
 
-		// 5) Aggiorno il widget di stato se esiste
-		if (BackpackStatusWidgetInstance)
-		{
-			BackpackStatusWidgetInstance->SetBackpackStatusVisible(false);
-		}
-
 		// 6) Abilito simulazione fisica sul componente Mesh dello zaino spawnato
 		if (DroppedBackpack->Mesh)
 		{
@@ -822,6 +796,8 @@ void APROGETTOCharacter::DropBackpack()
 				PC->SetInputMode(FInputModeGameOnly());
 			}
 		}
+
+	
 	}
 }
 

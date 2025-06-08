@@ -65,7 +65,9 @@ void ABaseItem::MainInteract(AActor* Interactor)
 	{
 		if (Player->AddItemToInventory(this))
 		{
-			Destroy();
+			//Destroy();
+			SetActorHiddenInGame(true);
+			SetActorEnableCollision(false);
 		}
 	}
 }

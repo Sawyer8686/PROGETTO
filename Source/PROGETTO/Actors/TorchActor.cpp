@@ -16,8 +16,25 @@ ATorchActor::ATorchActor()
         EEquipmentSlot::LeftHand
     };
     
-    
- 
+}
+
+void ATorchActor::MainInteract(AActor* Interactor)
+{
+    if (APROGETTOCharacter* Player = Cast<APROGETTOCharacter>(Interactor))
+
+    {
+        bool bTorchAdded = Player->AddItemToInventory(this);
+
+        if (bTorchAdded)
+        {
+            Player->bHasTorchEquipped = true;
+            Player->bHasTorch = true;
+            SetActorHiddenInGame(true);
+            SetActorEnableCollision(false);
+            UE_LOG(LogTemp, Warning, TEXT("TORCIA RACCOLTA"));
+        }
+
+    }
 }
 
 

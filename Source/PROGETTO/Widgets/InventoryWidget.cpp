@@ -100,8 +100,6 @@ void UInventoryWidget::OnCloseButtonClicked()
 		if (OwningCharacter->StatsWidgetInstance)
 			OwningCharacter->StatsWidgetInstance->SetVisibility(ESlateVisibility::Visible);
 
-		if (OwningCharacter->BackpackStatusWidgetInstance)
-			OwningCharacter->BackpackStatusWidgetInstance->SetVisibility(ESlateVisibility::Visible);
 	}
 	
 }
@@ -247,6 +245,11 @@ void UInventoryWidget::NativeConstruct()
 	if (CloseButton)
 		CloseButton->OnClicked.AddDynamic(this, &UInventoryWidget::OnCloseButtonClicked);
 
+	if (DropBackpackButton)
+	{
+		DropBackpackButton->OnClicked.AddDynamic(this, &UInventoryWidget::OnDropBackpackClicked);
+	}
+
 	// 3) Bind per i sei bottoni “Unequip” fissi
 	if (HeadUnequipButton)
 		HeadUnequipButton->OnClicked.AddDynamic(this, &UInventoryWidget::OnHeadUnequipClicked);
@@ -313,6 +316,28 @@ void UInventoryWidget::FocusFirstButton()
 			PC->SetInputMode(FInputModeUIOnly().SetWidgetToFocus(CloseButton->TakeWidget()));
 			PC->SetShowMouseCursor(true);
 			CloseButton->SetUserFocus(PC);
+		}
+	}
+}
+
+void UInventoryWidget::OnDropBackpackClicked()
+{
+	if (OwningCharacter)
+	{
+		OwningCharacter->DropBackpack();
+		// Chiude il widget inventario dopo il drop
+		SetVisibility(ESlateVisibility::Hidden);
+
+		// Disabilita cursore e reimposta input mode
+		if (APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController()))
+		{
+			PC->SetShowMouseCursor(false);
+			// Imposta l'input mode di nuovo su Game Only
+			FInputModeGameOnly InputMode;
+			PC->SetInputMode(InputMode);
+
+			// Riabilita input sul personaggio
+			OwningCharacter->EnableInput(PC);
 		}
 	}
 }
