@@ -54,9 +54,6 @@ public:
     UPROPERTY()
     APROGETTOCharacter* OwningCharacter;
 
-    UPROPERTY()
-    ATorchActor* EquippedTorch;
-
     UInventoryWidget* ParentInventoryWidget;
 
     UPROPERTY()

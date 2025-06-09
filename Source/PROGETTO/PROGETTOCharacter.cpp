@@ -13,16 +13,13 @@
 #include "TimerManager.h"
 #include "PROGETTO/Actors/KeyActor.h"
 #include "PROGETTO/Widgets/StatsWidget.h"
-#include "PROGETTO/Interfaces/ConsumeEnergy.h"
 #include "PROGETTO/Actors/BackpackActor.h"
 #include "Components/ProgressBar.h"
-#include "PROGETTO/Actors/TorchActor.h"
 #include "PhysicalMaterials/PhysicalMaterial.h"
 #include "PROGETTO/Structs/Enums/EquipmentTypes.h"
 #include "Components/SpotLightComponent.h"
 #include "Interfaces/MainInteractionInterface.h"
 #include "Components/PointLightComponent.h"
-#include "PROGETTO/Widgets/TorchBatteryWidget.h"
 #include "DrawDebugHelpers.h"
 #include "Kismet/GameplayStatics.h"
 #include "Blueprint/UserWidget.h"
@@ -58,24 +55,6 @@ APROGETTOCharacter::APROGETTOCharacter()
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); 
 	FollowCamera->bUsePawnControlRotation = false; 
-
-	CharacterTorchSpot = CreateDefaultSubobject<USpotLightComponent>(TEXT("CharacterTorchSpot"));
-	CharacterTorchSpot->SetupAttachment(FollowCamera);
-	CharacterTorchSpot->bUseInverseSquaredFalloff = false; 
-	CharacterTorchSpot->SetAttenuationRadius(1000.f);      
-	CharacterTorchSpot->SetInnerConeAngle(20.0f);          
-	CharacterTorchSpot->SetOuterConeAngle(30.0f);         
-	CharacterTorchSpot->SetVisibility(false);             
-
-	bHasTorchEquipped = false;
-	EquippedTorch = nullptr;
-
-	MaxBatteryEnergy = 100.0f;
-	CurrentBatteryEnergy = MaxBatteryEnergy;
-	BatteryDrainInterval = 1.0f;  
-	BatteryDrainAmount = 5.0f;  
-	bTorchIsOn = false;
-	TorchBatteryWidgetInstance = nullptr;
 
 	MaxHealth = 100.0f;
 	CurrentHealth = MaxHealth;
@@ -191,17 +170,6 @@ void APROGETTOCharacter::Tick(float DeltaTime)
 
 	}
 
-	if (bTorchIsOn && CharacterTorchSpot)
-	{
-		FVector Velocity = GetVelocity();
-		Velocity.Z = 0;
-		if (!Velocity.IsNearlyZero())
-		{
-			FRotator DesiredRotation = Velocity.Rotation();
-			CharacterTorchSpot->SetWorldRotation(DesiredRotation);
-		}
-	}
-
 }
 
 
@@ -225,7 +193,6 @@ void APROGETTOCharacter::ToggleInventory()
 			InventoryWidgetInstance->OwningCharacter = this;
 			InventoryWidgetInstance->AddToViewport(100);
 			InventoryWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
-			// Suono apertura inventario
 			if (InventoryOpenSound)
 			{
 				UGameplayStatics::PlaySound2D(this, InventoryOpenSound);
@@ -338,19 +305,6 @@ bool APROGETTOCharacter::AddItemToInventory(ABaseItem* Item)
 		return true;
 	}
 
-	if (ATorchActor* InTorch = Cast<ATorchActor>(Item))
-	{
-		Inventory.Add(InTorch);                      // la inserisco nell’array Inventory
-		CurrentCarryWeight += InTorch->Weight;       // aggiorno peso
-
-		// nascondo nel mondo, ma NON distruggo:
-		InTorch->SetActorHiddenInGame(true);
-		InTorch->SetActorEnableCollision(false);
-
-		ShowNotification(FString::Printf(TEXT("Hai raccolto la torcia")), 1.5f);
-		return true;
-	}
-
 	if (Item->ItemType == EItemType::Equippable)
 	{
 		Inventory.Add(Item);
@@ -416,17 +370,6 @@ void APROGETTOCharacter::DropItem(ABaseItem* Item)
 
 	if (!Item)
 		return;
-
-	// ──── Se è esattamente la torcia equipaggiata, prima faccio l'Unequip ────
-	if (ATorchActor* TorchActorPtr = Cast<ATorchActor>(Item))
-	{
-		if (bHasTorchEquipped)
-		{
-			UE_LOG(LogTemp, Warning, TEXT(">>>> DropItem: l'item è la torcia equipaggiata, chiamo UnequipItem"));
-			UnequipItem(Item);
-			// bHasTorchEquipped diventa false e la luce viene spenta qui dentro
-		}
-	}
 
 	if (AKeyActor* Key = Cast<AKeyActor>(Item))
 	{
@@ -590,41 +533,6 @@ void APROGETTOCharacter::EquipItem(ABaseItem* Item)
 	{
 		Item->bIsEquipped = true;
 		ShowNotification(FString::Printf(TEXT("Equipped: %s"), *Item->ItemName), 1.0f);
-
-		if (ATorchActor* ATorch = Cast<ATorchActor>(Item))
-		{
-			bHasTorchEquipped = true;
-
-			if (ATorchActor* BTorch = Cast<ATorchActor>(Item))
-			{
-				bHasTorchEquipped = true;
-
-				// 1) Se non ho ancora il widget, lo creo
-				if (TorchBatteryWidgetClass && !TorchBatteryWidgetInstance)
-				{
-					TorchBatteryWidgetInstance = CreateWidget<UTorchBatteryWidget>(
-						GetWorld(), TorchBatteryWidgetClass
-					);
-					if (TorchBatteryWidgetInstance)
-					{
-						TorchBatteryWidgetInstance->AddToViewport(900);
-						// Inizializzo subito la percentuale in base al valore corrente:
-						float Percent = (MaxBatteryEnergy > 0.0f)
-							? (CurrentBatteryEnergy / MaxBatteryEnergy)
-							: 0.0f;
-						TorchBatteryWidgetInstance->SetBatteryPercent(Percent);
-					}
-				}
-				else if (TorchBatteryWidgetInstance)
-				{
-					TorchBatteryWidgetInstance->SetVisibility(ESlateVisibility::Visible);
-					float Percent = (MaxBatteryEnergy > 0.0f)
-						? (CurrentBatteryEnergy / MaxBatteryEnergy)
-						: 0.0f;
-					TorchBatteryWidgetInstance->SetBatteryPercent(Percent);
-				}
-			}
-		}
 	}
 
 }
@@ -643,33 +551,6 @@ void APROGETTOCharacter::UnequipItemFromSlot(EEquipmentSlot Slot)
 
 
 	Item->bIsEquipped = false;
-
-	// 4) Se era una torcia, gestisco anche quel flag e la rimostro nel mondo
-	if (ATorchActor* ATorch = Cast<ATorchActor>(Item))
-	{
-		// Se la torcia era accesa, spegnila
-		if (bTorchIsOn)
-			TurnOffTorch();
-
-		bHasTorchEquipped = false;
-		EquippedTorch = nullptr;
-
-		// Rimostro la torcia nel mondo
-		ATorch->SetActorHiddenInGame(false);
-		ATorch->SetActorEnableCollision(true);
-	}
-
-	// Se è una torcia, rimuovo o nascondo il widget della batteria
-	if (ATorchActor* ATorch = Cast<ATorchActor>(Item))
-	{
-		bHasTorchEquipped = false;
-
-		if (TorchBatteryWidgetInstance)
-		{
-			TorchBatteryWidgetInstance->RemoveFromParent();
-			TorchBatteryWidgetInstance = nullptr;
-		}
-	}
 
 	Inventory.Add(Item);
 
@@ -809,127 +690,6 @@ void APROGETTOCharacter::DropBackpack()
 }
 
 
-
-///////////////////    TORCIA    /////////////////
-
-
-void APROGETTOCharacter::SetTorchIntensity(float NewIntensity)
-{
-	if (CharacterTorchSpot)
-	{
-		CharacterTorchSpot->SetIntensity(NewIntensity);
-		UE_LOG(LogTemp, Warning, TEXT("SetTorchIntensity: Intensità aggiornata a %.1f"), NewIntensity);
-	}
-}
-
-void APROGETTOCharacter::SetTorchColor(const FLinearColor& NewColor)
-{
-	if (CharacterTorchSpot)
-	{
-		CharacterTorchSpot->SetLightColor(NewColor);
-		UE_LOG(LogTemp, Warning, TEXT("SetTorchColor: Colore aggiornato a R=%.2f G=%.2f B=%.2f"),
-			NewColor.R, NewColor.G, NewColor.B);
-	}
-}
-
-void APROGETTOCharacter::SetTorchRadius(float NewRadius)
-{
-	if (CharacterTorchSpot)
-	{
-		CharacterTorchSpot->SetAttenuationRadius(NewRadius);
-		UE_LOG(LogTemp, Warning, TEXT("SetTorchRadius: Raggio di attenuazione aggiornato a %.1f"), NewRadius);
-	}
-}
-
-void APROGETTOCharacter::ToggleTorch()
-{
-	
-	if (!bHasTorchEquipped)
-	{
-		return;
-	}
-
-	if (!bTorchIsOn)
-	{
-		TurnOnTorch();
-	}
-	else
-	{
-		TurnOffTorch();
-	}
-}
-
-void APROGETTOCharacter::TurnOnTorch()
-{
-	
-	if (CurrentBatteryEnergy <= 0.0f)
-	{
-		
-		return;
-	}
-
-	if (bTorchIsOn)
-		return;
-
-	bTorchIsOn = true;
-
-	
-	if (CharacterTorchSpot)
-	{
-		CharacterTorchSpot->SetVisibility(true);
-	}
-	
-	GetWorldTimerManager().SetTimer(BatteryTimerHandle, this, &APROGETTOCharacter::DrainBatteryTimerFunction, BatteryDrainInterval, true);
-			
-}
-
-void APROGETTOCharacter::TurnOffTorch()
-{
-	if (!bTorchIsOn)
-		return;
-
-	bTorchIsOn = false;
-
-	// Spengo la luce sul Character
-	if (CharacterTorchSpot)
-	{
-		CharacterTorchSpot->SetVisibility(false);
-	}
-
-	// Ferma il timer di battery drain
-	GetWorldTimerManager().ClearTimer(BatteryTimerHandle);
-}
-
-void APROGETTOCharacter::DrainBatteryTimerFunction()
-{
-	// Scala la batteria
-	CurrentBatteryEnergy = FMath::Max(0.0f, CurrentBatteryEnergy - BatteryDrainAmount);
-
-	// Aggiorna il widget di batteria (mostra la percentuale)
-	if (TorchBatteryWidgetInstance)
-	{
-		float Percent = (MaxBatteryEnergy > 0.0f) ? (CurrentBatteryEnergy / MaxBatteryEnergy) : 0.0f;
-		TorchBatteryWidgetInstance->SetBatteryPercent(Percent);
-	}
-
-	// Se la batteria è esaurita, spengo automaticamente
-	if (CurrentBatteryEnergy <= 0.0f)
-	{
-		TurnOffTorch();
-		UE_LOG(LogTemp, Warning, TEXT("Batteria torcia esaurita, spengo automaticamente"));
-	}
-}
-
-void APROGETTOCharacter::SetBatteryEnergy(float NewBattery)
-{
-	CurrentBatteryEnergy = FMath::Clamp(NewBattery, 0.0f, MaxBatteryEnergy);
-	if (TorchBatteryWidgetInstance)
-	{
-		float Percent = (MaxBatteryEnergy > 0.0f) ? (CurrentBatteryEnergy / MaxBatteryEnergy) : 0.0f;
-		TorchBatteryWidgetInstance->SetBatteryPercent(Percent);
-	}
-}
-
 void APROGETTOCharacter::ShowNotification(const FString& Message, float Duration)
 {
 	if (!NotificationWidgetClass) return;
@@ -1005,22 +765,9 @@ void APROGETTOCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &APROGETTOCharacter::Move);
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APROGETTOCharacter::Look);
-		EnhancedInputComponent->BindAction(IA_TogglePower, ETriggerEvent::Started, this, &APROGETTOCharacter::TogglePowerViaLineTrace);
 		EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Started, this, &APROGETTOCharacter::StartRunning);
 		EnhancedInputComponent->BindAction(RunAction, ETriggerEvent::Completed, this, &APROGETTOCharacter::StopRunning);
 		EnhancedInputComponent->BindAction(MainInteraction, ETriggerEvent::Started, this, &APROGETTOCharacter::HandleInteraction);
-
-		if (Torch)
-		{
-			EnhancedInputComponent->BindAction(Torch, ETriggerEvent::Started, this, &APROGETTOCharacter::ToggleTorch);
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Torch UInputAction è nullptr: bind non eseguito."));
-		}
-
-
-
 		EnhancedInputComponent->BindAction(InventoryAction, ETriggerEvent::Started, this, &APROGETTOCharacter::ToggleInventory);
 		EnhancedInputComponent->BindAction(DropMyBackpack, ETriggerEvent::Started, this, &APROGETTOCharacter::DropBackpack);
 		
@@ -1030,7 +777,7 @@ void APROGETTOCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 
 void APROGETTOCharacter::HandleInteraction()
 {
-	FVector Start = FollowCamera->GetComponentLocation(); // O usare GetActorLocation()
+	FVector Start = FollowCamera->GetComponentLocation(); 
 	FVector Forward = FollowCamera->GetForwardVector();
 	FVector End = Start + Forward * 150.f;
 
@@ -1381,28 +1128,5 @@ void APROGETTOCharacter::Look(const FInputActionValue& Value)
 	}
 }
 
-void APROGETTOCharacter::TogglePowerViaLineTrace()
-{
-	FHitResult Hit;
-	FVector Start = FollowCamera->GetComponentLocation();
-	FVector End = Start + FollowCamera->GetForwardVector() * 500.0f;
-
-	FCollisionQueryParams Params;
-	Params.AddIgnoredActor(this);
-
-	if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params))
-	{
-		AActor* HitActor = Hit.GetActor();
-		if (HitActor && HitActor->GetClass()->ImplementsInterface(UConsumeEnergy::StaticClass()))
-		{
-			IConsumeEnergy* Interface = Cast<IConsumeEnergy>(HitActor);
-			if (Interface)
-			{
-				Interface->Execute_TogglePower(HitActor);
-			}
-		}
-	}
-	DrawDebugLine(GetWorld(), Start, End, FColor::Green, false, 2.0f, 0, 2.0f);
-}
 
 

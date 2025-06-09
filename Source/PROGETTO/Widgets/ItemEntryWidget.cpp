@@ -7,9 +7,7 @@
 #include "PROGETTO/Widgets/InventoryWidget.h" 
 #include "PROGETTO/Actors/KeyActor.h"
 #include "PROGETTO/Structs/Enums/EquipmentTypes.h"
-#include "PROGETTO/Actors/BatteryActor.h"
 #include "Kismet/GameplayStatics.h"
-#include "PROGETTO/Actors/TorchActor.h"
 #include "Engine/Texture2D.h"
 
 
@@ -99,35 +97,6 @@ void UItemEntryWidget::OnUseButtonClicked()
 	if (!Item || !OwningCharacter)
 		return;
 
-	// Verifico se è una BatteryActor
-	if (ABatteryActor* Battery = Cast<ABatteryActor>(Item))
-	{
-		// Solo se la batteria corrente è inferiore al massimo posso usare questa batteria
-		if (OwningCharacter->CurrentBatteryEnergy >= OwningCharacter->MaxBatteryEnergy)
-		{
-			OwningCharacter->ShowNotification(TEXT("Batteria già al massimo!"), 1.5f);
-			return;
-		}
-
-		float Amount = Battery->ChargeAmount;
-		// Calcolo nuova carica e uso SetBatteryEnergy (fa già FMath::Clamp internamente)
-		OwningCharacter->SetBatteryEnergy(OwningCharacter->CurrentBatteryEnergy + Amount);
-
-		// Rimuovo la batteria dall'inventario e la distruggo
-		OwningCharacter->RemoveItemFromInventory(Item);
-		if (OwningCharacter->InventoryWidgetInstance &&
-			OwningCharacter->InventoryWidgetInstance->IsVisible())
-		{
-			OwningCharacter->InventoryWidgetInstance->SetMyInventoryItems(
-				OwningCharacter->Inventory,
-				OwningCharacter->CurrentCarryWeight,
-				OwningCharacter->MaxCarryWeight
-			);
-		}
-		Battery->Destroy();
-		return;
-	}
-
 	if (Item->bCanBeConsumed)
 	{
 		
@@ -158,85 +127,6 @@ void UItemEntryWidget::OnUseButtonClicked()
 void UItemEntryWidget::OnDescriptionButtonClicked()
 {
 	
-	/*if (!Item || !ItemDescriptionWidgetClass)
-		return;
-
-	// Se il description è già aperto, lo chiudo e resetto
-	if (ItemDescriptionInstance && ItemDescriptionInstance->IsInViewport())
-	{
-		ItemDescriptionInstance->RemoveFromParent();
-		if (ParentInventoryWidget)
-			ParentInventoryWidget->ClearOpenDescriptions();
-		ItemDescriptionInstance = nullptr;
-		return;
-	}
-
-	// *** APRI NUOVA ISTANZA ***
-	if (APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0))
-	{
-		// Usa il PlayerController come context in CreateWidget
-		ItemDescriptionInstance = CreateWidget<UItemDescriptionWidget>(PC, ItemDescriptionWidgetClass);
-		if (ItemDescriptionInstance)
-		{
-			// PRIMA aggiungi al viewport
-			ItemDescriptionInstance->AddToViewport(101);
-			// POI imposta il testo
-			ItemDescriptionInstance->SetDescriptionText(Item->Description);
-			// Registra nel parent
-			if (ParentInventoryWidget)
-				ParentInventoryWidget->ClearOpenDescriptions();
-
-			// Ripristino focus su inventario e input mode
-			if (APlayerController* APC = UGameplayStatics::GetPlayerController(this, 0))
-			{
-				if (ParentInventoryWidget && ParentInventoryWidget->CloseButton)
-				{
-					APC->SetShowMouseCursor(true);
-					FInputModeUIOnly UIInput;
-					UIInput.SetWidgetToFocus(ParentInventoryWidget->CloseButton->TakeWidget());
-					UIInput.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-					APC->SetInputMode(UIInput);
-				}
-			}
-		}
-		else
-		{
-			// Assicuro che non ci sia un'istanza rimasta
-			if (ItemDescriptionInstance)
-			{
-				ItemDescriptionInstance->RemoveFromParent();
-				ItemDescriptionInstance = nullptr;
-			}
-
-			// Apro un nuovo description widget
-			ItemDescriptionInstance = CreateWidget<UItemDescriptionWidget>(GetWorld(), ItemDescriptionWidgetClass);
-			if (ItemDescriptionInstance)
-			{
-				ItemDescriptionInstance->SetParentInventoryWidget(ParentInventoryWidget);
-				ItemDescriptionInstance->SetDescriptionText(Item->Description);
-				ItemDescriptionInstance->AddToViewport(101);
-				ItemDescriptionInstance->SetVisibility(ESlateVisibility::Visible);
-
-				if (ParentInventoryWidget)
-				{
-					ParentInventoryWidget->RegisterOpenDescription(ItemDescriptionInstance);
-				}
-
-				// Imposto modalità input per UI e game, focus su description
-				if (APlayerController* APC = UGameplayStatics::GetPlayerController(this, 0))
-				{
-					APC->SetShowMouseCursor(true);
-					FInputModeGameAndUI InputMode;
-					InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-					InputMode.SetWidgetToFocus(ItemDescriptionInstance->TakeWidget());
-					APC->SetInputMode(InputMode);
-				}
-			}
-		}
-
-
-	}*/
-
 	if (!ItemDescriptionWidgetClass || !ParentInventoryWidget || !Item)
 		return;
 

@@ -10,9 +10,7 @@
 #include "Blueprint/UserWidget.h"
 #include "PROGETTO/Actors/BaseItem.h"
 #include "Widgets/InventoryWidget.h"
-#include "PROGETTO/Actors/TorchActor.h"
 #include "PROGETTO/Actors/BackpackActor.h"
-#include "PROGETTO/Widgets/TorchBatteryWidget.h"
 #include "PROGETTO/Widgets/EquipSlotSelectionWidget.h"
 #include "PROGETTO/Structs/Enums/EquipmentTypes.h"
 #include "Components/PointLightComponent.h"
@@ -25,7 +23,6 @@ class UCameraComponent;
 class UInputMappingContext;
 class UInputAction;
 struct FInputActionValue;
-class ATorchActor;
 class USpotLightComponent;
 class USoundBase;
 class UPhysicalMaterial;
@@ -61,9 +58,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* JumpAction;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	UInputAction* IA_TogglePower;
-
 	/** Move Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* MoveAction;
@@ -71,9 +65,6 @@ public:
 	/** Look Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* LookAction;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	UInputAction* Torch;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	UInputAction* InventoryAction;
@@ -124,15 +115,13 @@ public:
 	UPROPERTY()
 	UInventoryWidget* InventoryWidgetInstance = nullptr;
 
+	
 	UFUNCTION()
 	void ToggleInventory();
 
 	void GiveBackpack();
 
 	bool AddItemToInventory(ABaseItem* Item);
-
-	UPROPERTY(BlueprintReadOnly)
-	bool bHasTorch;
 
 	/** Funzione per equipaggiare un oggetto Equippable */
 	UFUNCTION(BlueprintCallable, Category = "Inventory")
@@ -142,82 +131,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Equipment")
 	void UnequipItemFromSlot(EEquipmentSlot Slot);
 
-	/** Torcia equipaggiata corrente (se esiste) */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory")
-	ATorchActor* EquippedTorch;
-
-	/** Se il giocatore ha equipaggiato la torcia */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Torch")
-	bool bHasTorchEquipped = false;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Torch")
-	USpotLightComponent* CharacterTorchSpot;
-
-	/** --- GESTIONE BATTERIA --- */
-	/** Batteria massima (imposta ad es. 100) */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Torch|Battery")
-	float MaxBatteryEnergy = 100.0f;
-
-	/** Batteria corrente */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Torch|Battery")
-	float CurrentBatteryEnergy = MaxBatteryEnergy;
-
-	/** Ogni quanti secondi scalare la batteria (es. 1 secondo) */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Torch|Battery")
-	float BatteryDrainInterval = 1.0f;
-
-	/** Quanta batteria scalare ad ogni intervallo (es. 1.0) */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Torch|Battery")
-	float BatteryDrainAmount = 25;
-
-	/** Handle per il timer che richiama DrainBatteryTimerFunction */
-	FTimerHandle BatteryTimerHandle;
-
-	/** Se true, la torcia è accesa e sta consumando batteria */
-	bool bTorchIsOn = false;
-
-	/** Classe del widget che mostra la batteria (assegnata via Blueprint) */
-	UPROPERTY(EditDefaultsOnly, Category = "Torch|UI")
-	TSubclassOf<UTorchBatteryWidget> TorchBatteryWidgetClass;
-
-	/** Istanza a runtime del widget di batteria */
-	UPROPERTY()
-	UTorchBatteryWidget* TorchBatteryWidgetInstance;
-
-	void SetTorchIntensity(float NewIntensity);
-	void SetTorchColor(const FLinearColor& NewColor);
-	void SetTorchRadius(float NewRadius);
-
 	void UnequipItem(ABaseItem* Item);
-
-	
-	UFUNCTION()
-	void ToggleTorch();
-
-	/** Funzione interna chiamata da ToggleTorch() per accendere */
-	void TurnOnTorch();
-
-	/** Funzione interna chiamata da ToggleTorch() per spegnere */
-	void TurnOffTorch();
-
-	/** Chiamata dal timer ogni BatteryDrainInterval secondi */
-	void DrainBatteryTimerFunction();
-
-	/** Ritorna true se la torcia è accesa */
-	UFUNCTION(BlueprintCallable, Category = "Torch")
-	bool IsTorchOn() const { return bTorchIsOn; }
-
-	/** Imposta un nuovo valore di batteria (per debug o refill) */
-	UFUNCTION(BlueprintCallable, Category = "Torch")
-	void SetBatteryEnergy(float NewBattery);
-
-	/** Getter per la percentuale di batteria [0..1] */
-	UFUNCTION(BlueprintCallable, Category = "Torch")
-	float GetBatteryPercent() const { return (MaxBatteryEnergy > 0) ? (CurrentBatteryEnergy / MaxBatteryEnergy) : 0.0f; }
-
-
-	UPROPERTY()
-	class UPointLightComponent* TorchLightComponent;
 
 	void ShowNotification(const FString& Message, float Duration = 1.0f);
 
@@ -396,8 +310,6 @@ public:
 
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
-
-	void TogglePowerViaLineTrace();
 
 	virtual void NotifyControllerChanged() override;
 

@@ -6,7 +6,6 @@
 #include "Sound/SoundBase.h"
 #include "PROGETTO/Interfaces/MainInteractionInterface.h"
 #include "Blueprint/UserWidget.h"
-#include "ConsumerEnergyActor.h"
 #include "SolarPanelActor.generated.h"
 
 
@@ -105,9 +104,4 @@ public:
 	UPROPERTY(BlueprintReadOnly)
 	bool bIsProducingEnergy = false;
 
-	UPROPERTY()
-	TArray<AConsumerEnergyActor*> ConnectedConsumers;
-
-	void RegisterConsumer(AConsumerEnergyActor* Consumer);
-	void NotifyConsumersPowerLost();
 };

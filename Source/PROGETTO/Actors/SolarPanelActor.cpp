@@ -106,7 +106,7 @@ void ASolarPanelActor::ToggleSolarPanel()
 		UE_LOG(LogTemp, Warning, TEXT("Produzione energia FERMA (pannello spento o è notte)"));
 		bIsProducingEnergy = false;
 		GetWorldTimerManager().ClearTimer(EnergyTimerHandle);
-		NotifyConsumersPowerLost();
+		
 	}
 
 	if (bIsEnabled && bIsDay && OnMaterial)
@@ -213,23 +213,7 @@ void ASolarPanelActor::RegisterToDayNightCycle()
 	}
 }
 
-void ASolarPanelActor::RegisterConsumer(AConsumerEnergyActor* Consumer)
-{
-	if (Consumer && !ConnectedConsumers.Contains(Consumer))
-	{
-		ConnectedConsumers.Add(Consumer);
-	}
-}
 
-void ASolarPanelActor::NotifyConsumersPowerLost()
-{
-	for (AConsumerEnergyActor* Consumer : ConnectedConsumers)
-	{
-		if (Consumer && Consumer->IsPoweredOn())
-		{
-			Consumer->ForceShutdown();
-		}
-	}
-}
+
 
 
