@@ -15,6 +15,8 @@ class APROGETTOCharacter;
 class UItemEntryWidget;
 class UItemDescriptionWidget; 
 class UEquippedItemsWidget;
+class UInventoryComponent;
+class UEquipSlotSelectionWidget;
 
 
 UCLASS()
@@ -24,7 +26,15 @@ class PROGETTO_API UInventoryWidget : public UUserWidget
 
 public:
 
-	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory")
+	UInventoryComponent* InventoryComponent;
+
+	UPROPERTY(meta = (BindWidget))
+	TMap<EEquipmentSlot, UEquipSlotSelectionWidget*> SlotWidget;
+
+	UPROPERTY()
+	UEquipSlotSelectionWidget* EquipPopupInstance;
+
 	UFUNCTION()
 	void OnHeadUnequipClicked();
 	UFUNCTION()

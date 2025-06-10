@@ -14,6 +14,7 @@ class APROGETTOCharacter;
 class ATorchActor;
 class ABatteryActor;
 class UInventoryWidget; 
+class UInventoryComponent;
 
 UCLASS()
 class PROGETTO_API UItemEntryWidget : public UUserWidget
@@ -23,6 +24,9 @@ class PROGETTO_API UItemEntryWidget : public UUserWidget
 public:
 
     //VARIABILI E RIFERIMENTI
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Componet")
+    UInventoryComponent* Inv;
 
     
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Equip")

@@ -7,6 +7,8 @@
 #include "GameFramework/PlayerController.h"
 
 
+
+
 void UEquipSlotSelectionWidget::SetupForItem(ABaseItem* Item, APROGETTOCharacter* Character)
 {
     if (!Item || !Character) return;
@@ -81,118 +83,198 @@ void UEquipSlotSelectionWidget::NativeConstruct()
     if (TorsoButton)       TorsoButton->OnClicked.AddDynamic(this, &UEquipSlotSelectionWidget::OnTorsoClicked);
     if (RightLegButton)    RightLegButton->OnClicked.AddDynamic(this, &UEquipSlotSelectionWidget::OnRightLegClicked);
     if (LeftLegButton)     LeftLegButton->OnClicked.AddDynamic(this, &UEquipSlotSelectionWidget::OnLeftLegClicked);
+
+    
 }
 
 void UEquipSlotSelectionWidget::OnHeadClicked()
 {
-    if (OwningCharacter && PendingItem)
+    // 1) Verifica OwningCharacter
+    if (!OwningCharacter)
+        return;
+
+    // 2) Recupera il componente inventario in modo sicuro
+    UInventoryComponent* InvComp = OwningCharacter->FindComponentByClass<UInventoryComponent>();
+    if (!InvComp)
+        return;
+
+    // 3) Se c'è un item in pendente, prova a equipaggiarlo
+    if (PendingItem)
     {
-        OwningCharacter->EquipItemToSlot(PendingItem, EEquipmentSlot::Head);
+        InvComp->EquipItemToSlot(PendingItem, EEquipmentSlot::Head);
     }
-    if (OwningCharacter->InventoryWidgetInstance)
+
+    // 4) Aggiorna il widget di inventario tramite il componente
+    if (UInventoryWidget* InvWidget = InvComp->InventoryWidgetInstance)
     {
-        OwningCharacter->InventoryWidgetInstance->SetMyInventoryItems(
-            OwningCharacter->Inventory,
-            OwningCharacter->CurrentCarryWeight,
-            OwningCharacter->MaxCarryWeight
+        InvWidget->SetMyInventoryItems(
+            InvComp->Inventory,
+            InvComp->CurrentCarryWeight,
+            InvComp->MaxCarryWeight
         );
     }
 
+    // 5) Chiudi il popup e ripristina l'inventario alle spalle
     RemoveFromParent();
     EnableInventoryBehind();
 }
 
 void UEquipSlotSelectionWidget::OnRightHandClicked()
 {
-    if (OwningCharacter && PendingItem)
+    // 1) Verifica OwningCharacter
+    if (!OwningCharacter)
+        return;
+
+    // 2) Recupera il componente inventario in modo sicuro
+    UInventoryComponent* InvComp = OwningCharacter->FindComponentByClass<UInventoryComponent>();
+    if (!InvComp)
+        return;
+
+    // 3) Se c'è un item in pendente, prova a equipaggiarlo
+    if (PendingItem)
     {
-        OwningCharacter->EquipItemToSlot(PendingItem, EEquipmentSlot::RightHand);
+        InvComp->EquipItemToSlot(PendingItem, EEquipmentSlot::RightHand);
     }
 
-    if (OwningCharacter->InventoryWidgetInstance)
+    // 4) Aggiorna il widget di inventario tramite il componente
+    if (UInventoryWidget* InvWidget = InvComp->InventoryWidgetInstance)
     {
-        OwningCharacter->InventoryWidgetInstance->SetMyInventoryItems(
-            OwningCharacter->Inventory,
-            OwningCharacter->CurrentCarryWeight,
-            OwningCharacter->MaxCarryWeight
+        InvWidget->SetMyInventoryItems(
+            InvComp->Inventory,
+            InvComp->CurrentCarryWeight,
+            InvComp->MaxCarryWeight
         );
     }
+
+    // 5) Chiudi il popup e ripristina l'inventario alle spalle
     RemoveFromParent();
     EnableInventoryBehind();
 }
 
 void UEquipSlotSelectionWidget::OnLeftHandClicked()
 {
-    if (OwningCharacter && PendingItem)
+    // 1) Verifica OwningCharacter
+    if (!OwningCharacter)
+        return;
+
+    // 2) Recupera il componente inventario in modo sicuro
+    UInventoryComponent* InvComp = OwningCharacter->FindComponentByClass<UInventoryComponent>();
+    if (!InvComp)
+        return;
+
+    // 3) Se c'è un item in pendente, prova a equipaggiarlo
+    if (PendingItem)
     {
-        OwningCharacter->EquipItemToSlot(PendingItem, EEquipmentSlot::LeftHand);
+        InvComp->EquipItemToSlot(PendingItem, EEquipmentSlot::LeftHand);
     }
 
-    if (OwningCharacter->InventoryWidgetInstance)
+    // 4) Aggiorna il widget di inventario tramite il componente
+    if (UInventoryWidget* InvWidget = InvComp->InventoryWidgetInstance)
     {
-        OwningCharacter->InventoryWidgetInstance->SetMyInventoryItems(
-            OwningCharacter->Inventory,
-            OwningCharacter->CurrentCarryWeight,
-            OwningCharacter->MaxCarryWeight
+        InvWidget->SetMyInventoryItems(
+            InvComp->Inventory,
+            InvComp->CurrentCarryWeight,
+            InvComp->MaxCarryWeight
         );
     }
+
+    // 5) Chiudi il popup e ripristina l'inventario alle spalle
     RemoveFromParent();
     EnableInventoryBehind();
 }
 
 void UEquipSlotSelectionWidget::OnTorsoClicked()
 {
-    if (OwningCharacter && PendingItem)
+    // 1) Verifica OwningCharacter
+    if (!OwningCharacter)
+        return;
+
+    // 2) Recupera il componente inventario in modo sicuro
+    UInventoryComponent* InvComp = OwningCharacter->FindComponentByClass<UInventoryComponent>();
+    if (!InvComp)
+        return;
+
+    // 3) Se c'è un item in pendente, prova a equipaggiarlo
+    if (PendingItem)
     {
-        OwningCharacter->EquipItemToSlot(PendingItem, EEquipmentSlot::Torso);
+        InvComp->EquipItemToSlot(PendingItem, EEquipmentSlot::Torso);
     }
 
-    if (OwningCharacter->InventoryWidgetInstance)
+    // 4) Aggiorna il widget di inventario tramite il componente
+    if (UInventoryWidget* InvWidget = InvComp->InventoryWidgetInstance)
     {
-        OwningCharacter->InventoryWidgetInstance->SetMyInventoryItems(
-            OwningCharacter->Inventory,
-            OwningCharacter->CurrentCarryWeight,
-            OwningCharacter->MaxCarryWeight
+        InvWidget->SetMyInventoryItems(
+            InvComp->Inventory,
+            InvComp->CurrentCarryWeight,
+            InvComp->MaxCarryWeight
         );
     }
+
+    // 5) Chiudi il popup e ripristina l'inventario alle spalle
     RemoveFromParent();
     EnableInventoryBehind();
 }
 
 void UEquipSlotSelectionWidget::OnRightLegClicked()
 {
-    if (OwningCharacter && PendingItem)
+    // 1) Verifica OwningCharacter
+    if (!OwningCharacter)
+        return;
+
+    // 2) Recupera il componente inventario in modo sicuro
+    UInventoryComponent* InvComp = OwningCharacter->FindComponentByClass<UInventoryComponent>();
+    if (!InvComp)
+        return;
+
+    // 3) Se c'è un item in pendente, prova a equipaggiarlo
+    if (PendingItem)
     {
-        OwningCharacter->EquipItemToSlot(PendingItem, EEquipmentSlot::RightLeg);
+        InvComp->EquipItemToSlot(PendingItem, EEquipmentSlot::RightLeg);
     }
 
-    if (OwningCharacter->InventoryWidgetInstance)
+    // 4) Aggiorna il widget di inventario tramite il componente
+    if (UInventoryWidget* InvWidget = InvComp->InventoryWidgetInstance)
     {
-        OwningCharacter->InventoryWidgetInstance->SetMyInventoryItems(
-            OwningCharacter->Inventory,
-            OwningCharacter->CurrentCarryWeight,
-            OwningCharacter->MaxCarryWeight
+        InvWidget->SetMyInventoryItems(
+            InvComp->Inventory,
+            InvComp->CurrentCarryWeight,
+            InvComp->MaxCarryWeight
         );
     }
+
+    // 5) Chiudi il popup e ripristina l'inventario alle spalle
     RemoveFromParent();
     EnableInventoryBehind();
 }
 
 void UEquipSlotSelectionWidget::OnLeftLegClicked()
 {
-    if (OwningCharacter && PendingItem)
+    // 1) Verifica OwningCharacter
+    if (!OwningCharacter)
+        return;
+
+    // 2) Recupera il componente inventario in modo sicuro
+    UInventoryComponent* InvComp = OwningCharacter->FindComponentByClass<UInventoryComponent>();
+    if (!InvComp)
+        return;
+
+    // 3) Se c'è un item in pendente, prova a equipaggiarlo
+    if (PendingItem)
     {
-        OwningCharacter->EquipItemToSlot(PendingItem, EEquipmentSlot::LeftLeg);
+        InvComp->EquipItemToSlot(PendingItem, EEquipmentSlot::LeftLeg);
     }
 
-    if (OwningCharacter->InventoryWidgetInstance)
+    // 4) Aggiorna il widget di inventario tramite il componente
+    if (UInventoryWidget* InvWidget = InvComp->InventoryWidgetInstance)
     {
-        OwningCharacter->InventoryWidgetInstance->SetMyInventoryItems(
-            OwningCharacter->Inventory,
-            OwningCharacter->CurrentCarryWeight,
-            OwningCharacter->MaxCarryWeight
+        InvWidget->SetMyInventoryItems(
+            InvComp->Inventory,
+            InvComp->CurrentCarryWeight,
+            InvComp->MaxCarryWeight
         );
     }
+
+    // 5) Chiudi il popup e ripristina l'inventario alle spalle
     RemoveFromParent();
     EnableInventoryBehind();
 }
@@ -207,9 +289,42 @@ void UEquipSlotSelectionWidget::DisableInventoryBehind()
 
 void UEquipSlotSelectionWidget::EnableInventoryBehind()
 {
-    if (OwningCharacter && OwningCharacter->InventoryWidgetInstance)
+    // 1) Controlla OwningCharacter
+    if (!OwningCharacter)
+        return;
+
+    // 2) Recupera il componente inventario in modo sicuro
+    UInventoryComponent* InvComp = OwningCharacter->FindComponentByClass<UInventoryComponent>();
+    if (!InvComp)
+        return;
+
+    // 3) Recupera l’istanza del widget inventario
+    UInventoryWidget* InvWidget = InvComp->InventoryWidgetInstance;
+    if (!InvWidget)
+        return;
+
+    // 4) Assicurati che il widget sia già aggiunto al viewport
+    //    se per qualche motivo non lo fosse, aggiungilo
+    if (!InvWidget->IsInViewport())
     {
-        OwningCharacter->InventoryWidgetInstance->SetIsEnabled(true);
+        InvWidget->AddToViewport(100);
+    }
+
+    // 5) Riporta in vista il widget di inventario
+    InvWidget->SetVisibility(ESlateVisibility::Visible);
+
+    // 6) Ripristina input e cursore
+    if (APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController()))
+    {
+        PC->SetShowMouseCursor(true);
+
+        FInputModeUIOnly InputMode;
+        InputMode.SetWidgetToFocus(InvWidget->TakeWidget());
+        InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+        PC->SetInputMode(InputMode);
+
+        // Disabilita input di gioco sul Character
+        OwningCharacter->DisableInput(PC);
     }
 }
 
@@ -217,13 +332,13 @@ void UEquipSlotSelectionWidget::HandleSlotSelection(EEquipmentSlot ASlot)
 {
     if (OwningCharacter && PendingItem)
     {
-        OwningCharacter->EquipItemToSlot(PendingItem, ASlot);
+        InventoryComponent->EquipItemToSlot(PendingItem, ASlot);
         if (OwningCharacter->InventoryWidgetInstance)
         {
             OwningCharacter->InventoryWidgetInstance->SetMyInventoryItems(
-                OwningCharacter->Inventory,
-                OwningCharacter->CurrentCarryWeight,
-                OwningCharacter->MaxCarryWeight
+                InventoryComponent->Inventory,
+                InventoryComponent->CurrentCarryWeight,
+                InventoryComponent->MaxCarryWeight
             );
         }
     }

@@ -9,6 +9,7 @@ class UButton;
 class ABaseItem;
 class APROGETTOCharacter;
 class UInventoryWidget;
+class UInventoryComponent;
 
 UCLASS()
 class PROGETTO_API UEquipSlotSelectionWidget : public UUserWidget
@@ -16,7 +17,8 @@ class PROGETTO_API UEquipSlotSelectionWidget : public UUserWidget
     GENERATED_BODY()
 
 public:
-
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory")
+    UInventoryComponent* InventoryComponent;
    
     UPROPERTY(BlueprintReadOnly, Category = "Equip")
     ABaseItem* PendingItem = nullptr;
@@ -25,6 +27,7 @@ public:
     UPROPERTY() 
     UInventoryWidget* ParentInventory = nullptr;
 
+    
 
     UPROPERTY(meta = (BindWidget))
     UButton* HeadButton;

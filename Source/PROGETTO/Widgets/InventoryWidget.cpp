@@ -7,7 +7,9 @@
 #include "PROGETTO/Structs/Enums/EquipmentTypes.h"
 #include "PROGETTO/Actors/BackPackActor.h"
 #include "Kismet/GameplayStatics.h"
+#include "PROGETTO/Components/InventoryComponent.h"
 #include "Blueprint/WidgetBlueprintLibrary.h"
+#include "PROGETTO/Components/InventoryComponent.h"
 #include "Components/Button.h"
 #include "PROGETTO/Widgets/ItemEntryWidget.h"
 
@@ -18,93 +20,72 @@ void UInventoryWidget::UpdateEquippedDisplay()
 	if (!OwningCharacter)
 		return;
 
-	// Recupero la mappa di slot equipaggiati dal Character
-	const TMap<EEquipmentSlot, ABaseItem*>& MapEquip = OwningCharacter->EquippedItemSlots;
+	// 1) Recupera il componente inventario in modo sicuro
+	UInventoryComponent* InvComp = OwningCharacter->FindComponentByClass<UInventoryComponent>();
+	if (!InvComp)
+		return;
 
-	// Per ciascuno dei sei slot, cerco se c’è un item nella mappa;
-	// se c’è, ne estraggo il nome, altrimenti metto “–” (o “Nessuno”).
-	auto GetNameOrNone = [&](EEquipmentSlot ChosenSlot) -> FString {
-		const ABaseItem* const* Found = MapEquip.Find(ChosenSlot);
-		if (Found && *Found)
-			return (*Found)->ItemName;
-		else
-			return FString(TEXT("Nessuno"));
+	// 2) Prendi la mappa slot?item
+	const TMap<EEquipmentSlot, ABaseItem*>& MapEquip = InvComp->EquippedItemSlots;
+
+	// 3) Helper per ottenere il nome dell'item o un placeholder
+	auto GetNameOrNone = [&](EEquipmentSlot MySlot) -> FString
+		{
+			if (const ABaseItem* const* Found = MapEquip.Find(MySlot); Found && *Found)
+			{
+				return (*Found)->ItemName;
+			}
+			return FString(TEXT("-")); // o "Nessuno"
 		};
 
-	// 1) Head
-	{
-		FString Name = GetNameOrNone(EEquipmentSlot::Head);
-		HeadEquippedText->SetText(FText::FromString(Name));
-		HeadUnequipButton->SetVisibility(
-			(Name != TEXT("Nessuno")) ? ESlateVisibility::Visible : ESlateVisibility::Hidden
-		);
-	}
-	// 2) RightHand
-	{
-		FString Name = GetNameOrNone(EEquipmentSlot::RightHand);
-		RightHandEquippedText->SetText(FText::FromString(Name));
-		RightHandUnequipButton->SetVisibility(
-			(Name != TEXT("Nessuno")) ? ESlateVisibility::Visible : ESlateVisibility::Hidden
-		);
-	}
-	// 3) LeftHand
-	{
-		FString Name = GetNameOrNone(EEquipmentSlot::LeftHand);
-		LeftHandEquippedText->SetText(FText::FromString(Name));
-		LeftHandUnequipButton->SetVisibility(
-			(Name != TEXT("Nessuno")) ? ESlateVisibility::Visible : ESlateVisibility::Hidden
-		);
-	}
-	// 4) Torso
-	{
-		FString Name = GetNameOrNone(EEquipmentSlot::Torso);
-		TorsoEquippedText->SetText(FText::FromString(Name));
-		TorsoUnequipButton->SetVisibility(
-			(Name != TEXT("Nessuno")) ? ESlateVisibility::Visible : ESlateVisibility::Hidden
-		);
-	}
-	// 5) RightLeg
-	{
-		FString Name = GetNameOrNone(EEquipmentSlot::RightLeg);
-		RightLegEquippedText->SetText(FText::FromString(Name));
-		RightLegUnequipButton->SetVisibility(
-			(Name != TEXT("Nessuno")) ? ESlateVisibility::Visible : ESlateVisibility::Hidden
-		);
-	}
-	// 6) LeftLeg
-	{
-		FString Name = GetNameOrNone(EEquipmentSlot::LeftLeg);
-		LeftLegEquippedText->SetText(FText::FromString(Name));
-		LeftLegUnequipButton->SetVisibility(
-			(Name != TEXT("Nessuno")) ? ESlateVisibility::Visible : ESlateVisibility::Hidden
-		);
-	}
+	// 4) Helper per aggiornare ciascuno slot (text + button)
+	auto UpdateSlot = [&](EEquipmentSlot ASlot, UTextBlock* Txt, UButton* Btn)
+		{
+			if (!Txt || !Btn)
+				return;
+
+			const FString Name = GetNameOrNone(ASlot);
+			Txt->SetText(FText::FromString(Name));
+			Btn->SetVisibility(Name != TEXT("-")
+				? ESlateVisibility::Visible
+				: ESlateVisibility::Hidden);
+		};
+
+	// 5) Aggiorna tutti e sei gli slot
+	UpdateSlot(EEquipmentSlot::Head, HeadEquippedText, HeadUnequipButton);
+	UpdateSlot(EEquipmentSlot::RightHand, RightHandEquippedText, RightHandUnequipButton);
+	UpdateSlot(EEquipmentSlot::LeftHand, LeftHandEquippedText, LeftHandUnequipButton);
+	UpdateSlot(EEquipmentSlot::Torso, TorsoEquippedText, TorsoUnequipButton);
+	UpdateSlot(EEquipmentSlot::RightLeg, RightLegEquippedText, RightLegUnequipButton);
+	UpdateSlot(EEquipmentSlot::LeftLeg, LeftLegEquippedText, LeftLegUnequipButton);
+
+	
 }
 
 void UInventoryWidget::OnCloseButtonClicked()
 {
 	
-	if (!OwningCharacter || !IsVisible())
+	// 1) Controlla OwningCharacter
+	if (!OwningCharacter)
 		return;
 
-	ClearOpenDescriptions();
+	// 2) Recupera in modo sicuro il componente d’inventario
+	UInventoryComponent* InvComp = OwningCharacter->FindComponentByClass<UInventoryComponent>();
+	if (!InvComp)
+		return;
 
-	SetVisibility(ESlateVisibility::Hidden);
-	if (OwningCharacter->InventoryCloseSound)
-	{
-		UGameplayStatics::PlaySound2D(this, OwningCharacter->InventoryCloseSound);
-	}
+	OwningCharacter->ToggleInventory();
 
-	if (APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController()))
-	{
-		OwningCharacter->EnableInput(PC);
-		PC->SetShowMouseCursor(false);
-		PC->SetInputMode(FInputModeGameOnly());
+	//if (APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController()))
+	//{
+		//OwningCharacter->EnableInput(PC);
+		//PC->SetShowMouseCursor(false);
+		//PC->SetInputMode(FInputModeGameOnly());
 
-		if (OwningCharacter->StatsWidgetInstance)
-			OwningCharacter->StatsWidgetInstance->SetVisibility(ESlateVisibility::Visible);
+		//if (OwningCharacter->StatsWidgetInstance)
+			//OwningCharacter->StatsWidgetInstance->SetVisibility(ESlateVisibility::Visible);
 
-	}
+	//}
 	
 }
 
@@ -211,7 +192,6 @@ void UInventoryWidget::SetMyInventoryItems(const TArray<ABaseItem*>& Items, floa
 	}
 }
 
-
 void UInventoryWidget::RegisterOpenDescription(UItemDescriptionWidget* Description)
 {
 	if (Description)
@@ -277,38 +257,248 @@ void UInventoryWidget::NativeConstruct()
 
 void UInventoryWidget::OnHeadUnequipClicked()
 {
-	if (OwningCharacter)
-		OwningCharacter->UnequipItemFromSlot(EEquipmentSlot::Head);
+	// 1) Sicurezza base
+	if (!OwningCharacter)
+		return;
+
+	UInventoryComponent* InvComp = OwningCharacter->FindComponentByClass<UInventoryComponent>();
+	if (!InvComp)
+		return;
+
+	// 2) Rimuovi l’item dallo slot e ricollocalo nell’inventario
+	InvComp->UnequipItemFromSlot(EEquipmentSlot::Head);
+
+	// 3) Ricostruisci la lista dell’inventario
+	//    (SetMyInventoryItems dovrebbe ricreare le righe col loro pulsante “Equip”)
+	SetMyInventoryItems(
+		InvComp->Inventory,
+		InvComp->CurrentCarryWeight,
+		InvComp->MaxCarryWeight
+	);
+
+	// 4) Aggiorna la visualizzazione degli slot equipaggiati
+	UpdateEquippedDisplay();
+
+	// 5) Assicura che il widget resti visibile
+	SetVisibility(ESlateVisibility::Visible);
+
+	// 6) Ripristina modalità UI-only e cursore
+	if (APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController()))
+	{
+		PC->SetShowMouseCursor(true);
+		FInputModeUIOnly InputMode;
+		InputMode.SetWidgetToFocus(TakeWidget());
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		PC->SetInputMode(InputMode);
+
+		// Tieni fermo il personaggio durante l’interazione UI
+		OwningCharacter->DisableInput(PC);
+	}
 }
 
 void UInventoryWidget::OnRightHandUnequipClicked()
 {
-	if (OwningCharacter)
-		OwningCharacter->UnequipItemFromSlot(EEquipmentSlot::RightHand);
+	// 1) Sicurezza base
+	if (!OwningCharacter)
+		return;
+
+	UInventoryComponent* InvComp = OwningCharacter->FindComponentByClass<UInventoryComponent>();
+	if (!InvComp)
+		return;
+
+	// 2) Rimuovi l’item dallo slot e ricollocalo nell’inventario
+	InvComp->UnequipItemFromSlot(EEquipmentSlot::RightHand);
+
+	// 3) Ricostruisci la lista dell’inventario
+	//    (SetMyInventoryItems dovrebbe ricreare le righe col loro pulsante “Equip”)
+	SetMyInventoryItems(
+		InvComp->Inventory,
+		InvComp->CurrentCarryWeight,
+		InvComp->MaxCarryWeight
+	);
+
+	// 4) Aggiorna la visualizzazione degli slot equipaggiati
+	UpdateEquippedDisplay();
+
+	// 5) Assicura che il widget resti visibile
+	SetVisibility(ESlateVisibility::Visible);
+
+	// 6) Ripristina modalità UI-only e cursore
+	if (APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController()))
+	{
+		PC->SetShowMouseCursor(true);
+		FInputModeUIOnly InputMode;
+		InputMode.SetWidgetToFocus(TakeWidget());
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		PC->SetInputMode(InputMode);
+
+		// Tieni fermo il personaggio durante l’interazione UI
+		OwningCharacter->DisableInput(PC);
+	}
 }
 
 void UInventoryWidget::OnLeftHandUnequipClicked()
 {
-	if (OwningCharacter)
-		OwningCharacter->UnequipItemFromSlot(EEquipmentSlot::LeftHand);
+	// 1) Sicurezza base
+	if (!OwningCharacter)
+		return;
+
+	UInventoryComponent* InvComp = OwningCharacter->FindComponentByClass<UInventoryComponent>();
+	if (!InvComp)
+		return;
+
+	// 2) Rimuovi l’item dallo slot e ricollocalo nell’inventario
+	InvComp->UnequipItemFromSlot(EEquipmentSlot::LeftHand);
+
+	// 3) Ricostruisci la lista dell’inventario
+	//    (SetMyInventoryItems dovrebbe ricreare le righe col loro pulsante “Equip”)
+	SetMyInventoryItems(
+		InvComp->Inventory,
+		InvComp->CurrentCarryWeight,
+		InvComp->MaxCarryWeight
+	);
+
+	// 4) Aggiorna la visualizzazione degli slot equipaggiati
+	UpdateEquippedDisplay();
+
+	// 5) Assicura che il widget resti visibile
+	SetVisibility(ESlateVisibility::Visible);
+
+	// 6) Ripristina modalità UI-only e cursore
+	if (APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController()))
+	{
+		PC->SetShowMouseCursor(true);
+		FInputModeUIOnly InputMode;
+		InputMode.SetWidgetToFocus(TakeWidget());
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		PC->SetInputMode(InputMode);
+
+		// Tieni fermo il personaggio durante l’interazione UI
+		OwningCharacter->DisableInput(PC);
+	}
 }
 
 void UInventoryWidget::OnTorsoUnequipClicked()
 {
-	if (OwningCharacter)
-		OwningCharacter->UnequipItemFromSlot(EEquipmentSlot::Torso);
+	// 1) Sicurezza base
+	if (!OwningCharacter)
+		return;
+
+	UInventoryComponent* InvComp = OwningCharacter->FindComponentByClass<UInventoryComponent>();
+	if (!InvComp)
+		return;
+
+	// 2) Rimuovi l’item dallo slot e ricollocalo nell’inventario
+	InvComp->UnequipItemFromSlot(EEquipmentSlot::Torso);
+
+	// 3) Ricostruisci la lista dell’inventario
+	//    (SetMyInventoryItems dovrebbe ricreare le righe col loro pulsante “Equip”)
+	SetMyInventoryItems(
+		InvComp->Inventory,
+		InvComp->CurrentCarryWeight,
+		InvComp->MaxCarryWeight
+	);
+
+	// 4) Aggiorna la visualizzazione degli slot equipaggiati
+	UpdateEquippedDisplay();
+
+	// 5) Assicura che il widget resti visibile
+	SetVisibility(ESlateVisibility::Visible);
+
+	// 6) Ripristina modalità UI-only e cursore
+	if (APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController()))
+	{
+		PC->SetShowMouseCursor(true);
+		FInputModeUIOnly InputMode;
+		InputMode.SetWidgetToFocus(TakeWidget());
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		PC->SetInputMode(InputMode);
+
+		// Tieni fermo il personaggio durante l’interazione UI
+		OwningCharacter->DisableInput(PC);
+	}
 }
 
 void UInventoryWidget::OnRightLegUnequipClicked()
 {
-	if (OwningCharacter)
-		OwningCharacter->UnequipItemFromSlot(EEquipmentSlot::RightLeg);
+	// 1) Sicurezza base
+	if (!OwningCharacter)
+		return;
+
+	UInventoryComponent* InvComp = OwningCharacter->FindComponentByClass<UInventoryComponent>();
+	if (!InvComp)
+		return;
+
+	// 2) Rimuovi l’item dallo slot e ricollocalo nell’inventario
+	InvComp->UnequipItemFromSlot(EEquipmentSlot::RightLeg);
+
+	// 3) Ricostruisci la lista dell’inventario
+	//    (SetMyInventoryItems dovrebbe ricreare le righe col loro pulsante “Equip”)
+	SetMyInventoryItems(
+		InvComp->Inventory,
+		InvComp->CurrentCarryWeight,
+		InvComp->MaxCarryWeight
+	);
+
+	// 4) Aggiorna la visualizzazione degli slot equipaggiati
+	UpdateEquippedDisplay();
+
+	// 5) Assicura che il widget resti visibile
+	SetVisibility(ESlateVisibility::Visible);
+
+	// 6) Ripristina modalità UI-only e cursore
+	if (APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController()))
+	{
+		PC->SetShowMouseCursor(true);
+		FInputModeUIOnly InputMode;
+		InputMode.SetWidgetToFocus(TakeWidget());
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		PC->SetInputMode(InputMode);
+
+		// Tieni fermo il personaggio durante l’interazione UI
+		OwningCharacter->DisableInput(PC);
+	}
 }
 
 void UInventoryWidget::OnLeftLegUnequipClicked()
 {
-	if (OwningCharacter)
-		OwningCharacter->UnequipItemFromSlot(EEquipmentSlot::LeftLeg);
+	// 1) Sicurezza base
+	if (!OwningCharacter)
+		return;
+
+	UInventoryComponent* InvComp = OwningCharacter->FindComponentByClass<UInventoryComponent>();
+	if (!InvComp)
+		return;
+
+	// 2) Rimuovi l’item dallo slot e ricollocalo nell’inventario
+	InvComp->UnequipItemFromSlot(EEquipmentSlot::LeftLeg);
+
+	// 3) Ricostruisci la lista dell’inventario
+	//    (SetMyInventoryItems dovrebbe ricreare le righe col loro pulsante “Equip”)
+	SetMyInventoryItems(
+		InvComp->Inventory,
+		InvComp->CurrentCarryWeight,
+		InvComp->MaxCarryWeight
+	);
+
+	// 4) Aggiorna la visualizzazione degli slot equipaggiati
+	UpdateEquippedDisplay();
+
+	// 5) Assicura che il widget resti visibile
+	SetVisibility(ESlateVisibility::Visible);
+
+	// 6) Ripristina modalità UI-only e cursore
+	if (APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController()))
+	{
+		PC->SetShowMouseCursor(true);
+		FInputModeUIOnly InputMode;
+		InputMode.SetWidgetToFocus(TakeWidget());
+		InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		PC->SetInputMode(InputMode);
+
+		// Tieni fermo il personaggio durante l’interazione UI
+		OwningCharacter->DisableInput(PC);
+	}
 }
 
 void UInventoryWidget::FocusFirstButton()
@@ -326,22 +516,29 @@ void UInventoryWidget::FocusFirstButton()
 
 void UInventoryWidget::OnDropBackpackClicked()
 {
-	if (OwningCharacter)
+	// 1) Verifica OwningCharacter
+	if (!OwningCharacter)
+		return;
+
+	// 2) Recupera il componente in modo sicuro
+	UInventoryComponent* InvComp = OwningCharacter->FindComponentByClass<UInventoryComponent>();
+	if (!InvComp || !InvComp->bHasBackpack)
+		return;
+
+	// 3) Fai drop dello zaino
+	InvComp->DropBackpack();
+
+	// 4) Nascondi il widget inventario
+	SetVisibility(ESlateVisibility::Hidden);
+
+	// 5) Ripristina input e cursore sul controller del giocatore
+	if (APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController()))
 	{
-		OwningCharacter->DropBackpack();
-		// Chiude il widget inventario dopo il drop
-		SetVisibility(ESlateVisibility::Hidden);
+		PC->SetShowMouseCursor(false);
 
-		// Disabilita cursore e reimposta input mode
-		if (APlayerController* PC = Cast<APlayerController>(OwningCharacter->GetController()))
-		{
-			PC->SetShowMouseCursor(false);
-			// Imposta l'input mode di nuovo su Game Only
-			FInputModeGameOnly InputMode;
-			PC->SetInputMode(InputMode);
+		FInputModeGameOnly InputMode;
+		PC->SetInputMode(InputMode);
 
-			// Riabilita input sul personaggio
-			OwningCharacter->EnableInput(PC);
-		}
+		OwningCharacter->EnableInput(PC);
 	}
 }

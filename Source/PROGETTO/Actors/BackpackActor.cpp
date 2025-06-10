@@ -1,5 +1,6 @@
 #include "BackpackActor.h"
 #include "PROGETTO/PROGETTOCharacter.h"
+#include "Kismet/GameplayStatics.h"
 
 // Sets default values
 ABackpackActor::ABackpackActor()
@@ -33,10 +34,19 @@ void ABackpackActor::Tick(float DeltaTime)
 
 void ABackpackActor::MainInteract(AActor* Interactor)
 {
-	if (APROGETTOCharacter* Player = Cast<APROGETTOCharacter>(Interactor))
-	{
-		Player->GiveBackpack(); // Abilita inventario
-		Player->DroppedBackpack = nullptr; // Reset riferimento
-		Destroy(); // Rimuovi zaino dal mondo
-	}
+    // 1) Prendi il pawn e cast in APROGETTOCharacter
+    APROGETTOCharacter* Player = Cast<APROGETTOCharacter>(UGameplayStatics::GetPlayerCharacter(this, 0));
+    if (!Player)
+        return;            // niente character: esci
+
+    // 2) Recupera il componente in modo sicuro
+    UInventoryComponent* InvComp = Player->FindComponentByClass<UInventoryComponent>();
+    if (!InvComp)
+        return;            // niente componente: esci
+
+    // 3) Adesso sei sicuro che Owner e componente sono validi
+    InvComp->GiveBackpack();
+
+    // 5) Distruggi lo zaino
+    Destroy();
 }

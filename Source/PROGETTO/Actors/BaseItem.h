@@ -7,6 +7,7 @@
 #include "BaseItem.generated.h"
 
 class UButton;
+class UInventoryComponent;
 
 UENUM(BlueprintType)
 enum class EItemType : uint8
@@ -31,6 +32,9 @@ public:
 	ABaseItem();
 
 public:
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    UInventoryComponent* Inv;
 	
 	virtual void BeginPlay() override;
 

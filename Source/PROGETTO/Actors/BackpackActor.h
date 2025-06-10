@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "PROGETTO/Interfaces/MainInteractionInterface.h"
+#include "PROGETTO/Components/InventoryComponent.h"
 #include "BackpackActor.generated.h"
 
 UCLASS()
@@ -15,6 +16,10 @@ public:
 	ABackpackActor();
 
 public:
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UInventoryComponent* Inv;
+
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 

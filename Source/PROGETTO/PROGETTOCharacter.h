@@ -14,6 +14,7 @@
 #include "PROGETTO/Widgets/EquipSlotSelectionWidget.h"
 #include "PROGETTO/Structs/Enums/EquipmentTypes.h"
 #include "Components/PointLightComponent.h"
+#include "PROGETTO/Components/InventoryComponent.h"
 #include "PROGETTO/Widgets/NotificationWidget.h"
 #include "PROGETTOCharacter.generated.h"
 
@@ -39,14 +40,34 @@ class APROGETTOCharacter : public ACharacter
 
 public:
 
-
-	/** Camera boom positioning the camera behind the character */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	USpringArmComponent* CameraBoom;
 
 	/** Follow camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FollowCamera;
+
+	void ShowNotification(const FString& Message, float Duration = 1.0f);
+
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UNotificationWidget> NotificationWidgetClass;
+
+	UPROPERTY()
+	UNotificationWidget* ActiveNotificationWidget;
+
+	FTimerHandle NotificationTimerHandle;
+
+	void HideNotification();
+
+	APROGETTOCharacter();
+
+	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
+
+	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
+	virtual void Tick(float DeltaTime) override;
+
+	virtual void BeginPlay() override;
 
 
 #pragma region INPUT
@@ -78,36 +99,33 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
 	class UInputAction* RunAction;
 
-#pragma endregion INPUT
+	// Stato attuale della corsa
+	bool bIsRunning;
 
+	// Funzioni di input
+	void StartRunning();
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio")
-	USoundBase* BackpackPickupSound;
-
-	/** Suono riprodotto all'apertura dell'inventario */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio")
-	USoundBase* InventoryOpenSound;
-
-	/** Suono riprodotto alla chiusura dell'inventario */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio")
-	USoundBase* InventoryCloseSound;
+	void StopRunning();
 
 	void HandleInteraction();
 
-	UPROPERTY(BlueprintReadOnly, Category = "Equipment")
-	TMap<EEquipmentSlot, ABaseItem*> EquippedItemSlots;
+	/** Called for movement input */
+	void Move(const FInputActionValue& Value);
 
-	UFUNCTION(BlueprintCallable, Category = "Equipment")
-	bool EquipItemToSlot(ABaseItem* Item, EEquipmentSlot Slot);
+	/** Called for looking input */
+	void Look(const FInputActionValue& Value);
 
-	UPROPERTY()
-	bool bHasBackpack;
+	virtual void NotifyControllerChanged() override;
 
-	UPROPERTY()
-	TArray<ABaseItem*> Inventory;
+	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-	UPROPERTY(EditDefaultsOnly)
-	int32 InventorySize;
+#pragma endregion INPUT
+
+
+#pragma region INVENTORY
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory")
+	UInventoryComponent* InventoryComponent;
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UInventoryWidget> InventoryWidgetClass;
@@ -115,50 +133,82 @@ public:
 	UPROPERTY()
 	UInventoryWidget* InventoryWidgetInstance = nullptr;
 
-	
 	UFUNCTION()
 	void ToggleInventory();
 
-	void GiveBackpack();
+#pragma endregion INVENTORY
+	
 
-	bool AddItemToInventory(ABaseItem* Item);
+#pragma region STATS
 
-	/** Funzione per equipaggiare un oggetto Equippable */
-	UFUNCTION(BlueprintCallable, Category = "Inventory")
-	void EquipItem(ABaseItem* Item);
+	// Funzione per ripristinare la fame
+	UFUNCTION(BlueprintCallable, Category = "Stats")
+	void RestoreHunger(float Amount);
 
-	/** Rimuove l’item da quello slot e lo rimette in inventario */
-	UFUNCTION(BlueprintCallable, Category = "Equipment")
-	void UnequipItemFromSlot(EEquipmentSlot Slot);
+	// Funzione per ripristinare la sete
+	UFUNCTION(BlueprintCallable, Category = "Stats")
+	void RestoreThirst(float Amount);
 
-	void UnequipItem(ABaseItem* Item);
+	FTimerHandle ThirstTimerHandle;
 
-	void ShowNotification(const FString& Message, float Duration = 1.0f);
+	void DecreaseThirst();
+
+	void StartThirstTimer();
+
+	void StopThirstTimer();
+
+	void StartStarvationDamage();
+
+	void StopStarvationDamage();
+
+	void ApplyStarvationDamage();
+
+	FTimerHandle DehydrationDamageTimerHandle;
+
+	void StartDehydrationDamage();
+
+	void StopDehydrationDamage();
+
+	void ApplyDehydrationDamage();
+
+	void DecreaseHunger();
+
+	void StartHungerTimer();
+
+	void StopHungerTimer();
+
+	// Getter opzionali
+	UFUNCTION(BlueprintCallable, Category = "Stats")
+	float GetCurrentHunger() const { return CurrentHunger; }
+
+	UFUNCTION(BlueprintCallable, Category = "Stats")
+	float GetMaxHunger() const { return MaxHunger; }
+
+	FTimerHandle StarvationDamageTimerHandle;
+
+	// SETE
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stats")
+	float MaxThirst;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stats")
+	float CurrentThirst;
+
+	// Fame
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stats")
+	float MaxHunger;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stats")
+	float CurrentHunger;
+
+	// Timer per fame
+	FTimerHandle HungerTimerHandle;
 
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
-	TSubclassOf<UNotificationWidget> NotificationWidgetClass;
+	TSubclassOf<UUserWidget> StatsWidgetClass;
 
+	// Istanza attiva del widget
 	UPROPERTY()
-	UNotificationWidget* ActiveNotificationWidget;
-
-	FTimerHandle NotificationTimerHandle;
-
-	void HideNotification();
-
-	// Stato attuale della corsa
-	bool bIsRunning;
-
-	// Funzioni di input
-	void StartRunning();
-	void StopRunning();
-
-	APROGETTOCharacter();
-
-	/** Returns CameraBoom subobject **/
-	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
-
-	/** Returns FollowCamera subobject **/
-	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+	UStatsWidget* StatsWidgetInstance;
 
 	// Salute massima e attuale
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stats")
@@ -179,67 +229,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Stats")
 	float GetMaxHealth() const { return MaxHealth; }
 
-	// Classe del widget da assegnare nel Blueprint
-	UPROPERTY(EditDefaultsOnly, Category = "UI")
-	TSubclassOf<UUserWidget> StatsWidgetClass;
-
-	// Istanza attiva del widget
-	UPROPERTY()
-	UStatsWidget* StatsWidgetInstance;
-
 	void UpdateHealthUI();
-	
-	// Fame
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stats")
-	float MaxHunger;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stats")
-	float CurrentHunger;
-
-	// Timer per fame
-	FTimerHandle HungerTimerHandle;
-
-	// Funzioni
-	void DecreaseHunger();
-	void StartHungerTimer();
-	void StopHungerTimer();
-
-	// Getter opzionali
-	UFUNCTION(BlueprintCallable, Category = "Stats")
-	float GetCurrentHunger() const { return CurrentHunger; }
-
-	UFUNCTION(BlueprintCallable, Category = "Stats")
-	float GetMaxHunger() const { return MaxHunger; }
-
-	FTimerHandle StarvationDamageTimerHandle;
-
-	// SETE
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Stats")
-	float MaxThirst;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stats")
-	float CurrentThirst;
-
-	FTimerHandle ThirstTimerHandle;
-
-	// Funzioni sete
-	void DecreaseThirst();
-	void StartThirstTimer();
-	void StopThirstTimer();
-
-	void StartStarvationDamage();
-	void StopStarvationDamage();
-	void ApplyStarvationDamage();
-
-	FTimerHandle DehydrationDamageTimerHandle;
-
-	void StartDehydrationDamage();
-	void StopDehydrationDamage();
-	void ApplyDehydrationDamage();
-
-	virtual void Tick(float DeltaTime) override;
-
-	// Stamina variabile e massimo
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vitals")
 	float Stamina;
 
@@ -247,77 +238,11 @@ public:
 	float MaxStamina;
 
 	float TimeSinceStoppedRunning;
+
 	bool bCanRecoverStamina;
 
 	bool bStaminaSottoSoglia;
 
-	// Peso massimo trasportabile
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Inventory")
-	float MaxCarryWeight = 50.0f;
+#pragma endregion STATS
 
-	// Peso attuale
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Inventory")
-	float CurrentCarryWeight = 0.0f;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Inventory")
-	TSubclassOf<class ABackpackActor> BackpackClass;
-
-	UPROPERTY()
-	ABackpackActor* DroppedBackpack;
-
-	/** Restituisce la lista di tutti gli oggetti attualmente equipaggiati */
-	UFUNCTION(BlueprintCallable, Category = "Inventory")
-	TArray<ABaseItem*> GetEquippedItems() const;
-
-	UFUNCTION()
-	void DropBackpack();
-
-	UFUNCTION()
-	bool RemoveItemFromInventory(ABaseItem* Item);
-
-	/** Scarta l’item: lo “droppa” nel mondo e lo rimuove dall’inventario */
-	UFUNCTION()
-	void DropItem(ABaseItem* Item);
-
-	// Funzione per ripristinare la fame
-	UFUNCTION(BlueprintCallable, Category = "Stats")
-	void RestoreHunger(float Amount);
-
-	// Funzione per ripristinare la sete
-	UFUNCTION(BlueprintCallable, Category = "Stats")
-	void RestoreThirst(float Amount);
-
-	// TSet di FName per immagazzinare quali key il player possiede
-	UPROPERTY(BlueprintReadOnly, Category = "Inventory")
-	TSet<FName> OwnedKeys;
-
-	// Ritorna true se il player ha la chiave con l'ID specificato
-	UFUNCTION(BlueprintCallable, Category = "Inventory")
-	bool HasKey(FName KeyID) const { return OwnedKeys.Contains(KeyID); }
-
-	// Aggiunge la chiave al set
-	UFUNCTION(BlueprintCallable, Category = "Inventory")
-	void AddKey(FName KeyID) { OwnedKeys.Add(KeyID); }
-
-	/** Rimuove una chiave dall’insieme di chiavi possedute */
-	UFUNCTION(BlueprintCallable, Category = "Inventory")
-	void RemoveKey(FName KeyID) { OwnedKeys.Remove(KeyID); }
-
-	virtual void BeginPlay() override;
-
-	/** Called for movement input */
-	void Move(const FInputActionValue& Value);
-
-	/** Called for looking input */
-	void Look(const FInputActionValue& Value);
-
-	virtual void NotifyControllerChanged() override;
-
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
-	
-
-
-
-};
-
+};   

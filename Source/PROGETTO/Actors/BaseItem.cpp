@@ -1,5 +1,8 @@
 #include "BaseItem.h"
 #include "PROGETTO/PROGETTOCharacter.h"
+#include "Kismet/GameplayStatics.h"
+#include "PROGETTO/Components/InventoryComponent.h"
+
 
 // Sets default values
 ABaseItem::ABaseItem()
@@ -61,13 +64,29 @@ void ABaseItem::Tick(float DeltaTime)
 
 void ABaseItem::MainInteract(AActor* Interactor)
 {
-	if (APROGETTOCharacter* Player = Cast<APROGETTOCharacter>(Interactor))
+	// 1) Prendi il PlayerCharacter
+	APROGETTOCharacter* Player = Cast<APROGETTOCharacter>(
+		UGameplayStatics::GetPlayerCharacter(this, 0));
+	if (!Player)
+		return;
+
+	// 2) Trova il componente in modo sicuro
+	UInventoryComponent* InvComp = Player->FindComponentByClass<UInventoryComponent>();
+	if (!InvComp)
+		return;
+
+	// 3) Ora chiami AddItemToInventory solo se il componente è valido
+	const bool bAdded = InvComp->AddItemToInventory(this);
+	if (bAdded)
 	{
-		if (Player->AddItemToInventory(this))
+		// Logica di pickup (nascondi, disattiva collisione, ecc.)
+		SetActorHiddenInGame(true);
+		SetActorEnableCollision(false);
+		if (auto* MeshComp = FindComponentByClass<UStaticMeshComponent>())
 		{
-			//Destroy();
-			SetActorHiddenInGame(true);
-			SetActorEnableCollision(false);
+			MeshComp->SetVisibility(false);
+			MeshComp->SetSimulatePhysics(false);
+			MeshComp->SetEnableGravity(false);
 		}
 	}
 }

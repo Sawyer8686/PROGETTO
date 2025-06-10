@@ -5,7 +5,6 @@
 #include "PROGETTO/PROGETTOCharacter.h"
 #include "PROGETTO/Widgets/ItemDescriptionWidget.h"
 #include "PROGETTO/Widgets/InventoryWidget.h" 
-#include "PROGETTO/Actors/KeyActor.h"
 #include "PROGETTO/Structs/Enums/EquipmentTypes.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/Texture2D.h"
@@ -109,7 +108,7 @@ void UItemEntryWidget::OnUseButtonClicked()
 			OwningCharacter->RestoreThirst(Item->ThirstRestore);
 		}
 
-		OwningCharacter->RemoveItemFromInventory(Item);
+		Inv->RemoveItemFromInventory(Item);
 		Item->Destroy();
 	}
 
@@ -117,9 +116,9 @@ void UItemEntryWidget::OnUseButtonClicked()
 		OwningCharacter->InventoryWidgetInstance->IsVisible())
 	{
 		OwningCharacter->InventoryWidgetInstance->SetMyInventoryItems(
-			OwningCharacter->Inventory,
-			OwningCharacter->CurrentCarryWeight,
-			OwningCharacter->MaxCarryWeight
+			Inv->Inventory,
+			Inv->CurrentCarryWeight,
+			Inv->MaxCarryWeight
 		);
 	}
 }
@@ -182,20 +181,24 @@ void UItemEntryWidget::OnDescriptionButtonClicked()
 void UItemEntryWidget::OnDiscardButtonClicked()
 {
 	
-	if (!Item || !OwningCharacter)
+	// 1) Assicurati di avere un OwningCharacter valido
+	if (!OwningCharacter)
 		return;
 
-	OwningCharacter->DropItem(Item);
+	// 2) Recupera il componente inventario in modo sicuro
+	UInventoryComponent* InvComp = OwningCharacter->FindComponentByClass<UInventoryComponent>();
+	if (!InvComp)
+		return;
 
-	if (OwningCharacter->InventoryWidgetInstance &&
-		OwningCharacter->InventoryWidgetInstance->IsVisible())
-	{
-		OwningCharacter->InventoryWidgetInstance->SetMyInventoryItems(
-			OwningCharacter->Inventory,
-			OwningCharacter->CurrentCarryWeight,
-			OwningCharacter->MaxCarryWeight
-		);
-	}
+	// 3) Verifica che l'item assegnato a questo widget esista
+	if (!Item)  // o qualunque membro tenga l'item
+		return;
+
+	// 4) Invoca il drop
+	InvComp->DropItem(Item);
+
+	// 5) (Opzionale) Rimuovi o aggiorna il widget entry
+	RemoveFromParent();
 
 }
 
@@ -213,7 +216,7 @@ void UItemEntryWidget::OnEquipButtonClicked()
 		// 1) Se è già equip, chiamo semplicemente l’Unequip del Character
 		if (Item->bIsEquipped)
 		{
-			OwningCharacter->UnequipItem(Item);
+			Inv->UnequipItem(Item);
 	
 			return;
 		}
