@@ -22,4 +22,5 @@ public:
 
 	virtual void MainInteract(AActor* Interactor) = 0;
 
+	
 };

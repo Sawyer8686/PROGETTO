@@ -19,7 +19,8 @@ enum class EItemType : uint8
 	Key,
 	Tool,
 	Weapon,
-	Misc
+	Misc,
+    Composite
 };
 
 UCLASS()

@@ -94,6 +94,13 @@ public:
     /** Rimuove un identificatore di chiave dalla lista delle chiavi raccolte */
     void RemoveKey(FName KeyID);
 
+    UFUNCTION(BlueprintCallable, Category = "Inventory")
+    void DismantleItem(ABaseItem * Item);
+
+    /** Verifica se ci sono slot e peso liberi per queste parti */
+    UFUNCTION(BlueprintCallable, Category = "Inventory")
+    bool HasSpaceForParts(const TArray<TSubclassOf<ABaseItem>>& PartClasses) const;
+
     /** Insieme delle chiavi raccolte (identificatori) */
     UPROPERTY()
     TSet<FName> CollectedKeys;

@@ -280,6 +280,7 @@ void APROGETTOCharacter::HandleInteraction()
 			if (Interface)
 			{
 				Interface->MainInteract(this);
+				
 			}
 		}
 	}

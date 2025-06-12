@@ -5,6 +5,7 @@
 #include "PROGETTO/Widgets/StatsWidget.h"
 #include "Kismet/GameplayStatics.h"
 #include "DrawDebugHelpers.h"
+#include "PROGETTO/Actors/CompositeItem.h"
 #include "Camera/CameraComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "Blueprint/UserWidget.h"
@@ -520,4 +521,78 @@ void UInventoryComponent::AddKey(FName KeyID)
 void UInventoryComponent::RemoveKey(FName KeyID)
 {
     CollectedKeys.Remove(KeyID);
+}
+
+void UInventoryComponent::DismantleItem(ABaseItem* Item)
+{
+    if (!Item || Item->ItemType != EItemType::Composite)
+        return;
+
+    // Cast sicuro
+    ACompositeItem* Composite = Cast<ACompositeItem>(Item);
+    if (!Composite)
+        return;
+
+    // Controllo spazio prima di smontare
+    if (!HasSpaceForParts(Composite->PartClasses))
+    {
+        if (APROGETTOCharacter* PC = Cast<APROGETTOCharacter>(GetOwner()))
+        {
+            PC->ShowNotification(TEXT("Inventario pieno o troppo pesante!"), 2.0f);
+        }
+        return;
+    }
+
+    // Smontaggio: come prima
+    UWorld* World = GetWorld();
+    APROGETTOCharacter* OwnerChar = Cast<APROGETTOCharacter>(GetOwner());
+    if (!World || !OwnerChar)
+        return;
+
+    for (auto& PartClass : Composite->PartClasses)
+    {
+        if (!PartClass) continue;
+        FActorSpawnParameters Params;
+        Params.Owner = OwnerChar;
+        Params.Instigator = OwnerChar->GetInstigator();
+
+        ABaseItem* NewPart = World->SpawnActor<ABaseItem>(
+            PartClass, FVector::ZeroVector, FRotator::ZeroRotator, Params);
+        if (NewPart)
+            AddItemToInventory(NewPart);
+    }
+
+    RemoveItemFromInventory(Composite);
+    Composite->Destroy();
+}
+
+bool UInventoryComponent::HasSpaceForParts(const TArray<TSubclassOf<ABaseItem>>& PartClasses) const
+{
+    // 1) Conteggio slot liberi
+    int32 ValidCount = 0;
+    for (ABaseItem* I : Inventory) if (I) ++ValidCount;
+    int32 FreeSlots = InventorySize - ValidCount;
+    if (FreeSlots < PartClasses.Num())
+    {
+        return false;
+    }
+
+    // 2) Calcolo peso totale delle parti
+    float TotalWeight = 0.f;
+    for (auto& Cls : PartClasses)
+    {
+        if (Cls)
+        {
+            if (ABaseItem* Default = Cls->GetDefaultObject<ABaseItem>())
+            {
+                TotalWeight += Default->Weight;
+            }
+        }
+    }
+    if (CurrentCarryWeight + TotalWeight > MaxCarryWeight)
+    {
+        return false;
+    }
+
+    return true;
 }

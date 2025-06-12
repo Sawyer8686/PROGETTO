@@ -5,6 +5,9 @@
 #include "PROGETTO/PROGETTOCharacter.h"
 #include "PROGETTO/Widgets/ItemDescriptionWidget.h"
 #include "PROGETTO/Widgets/InventoryWidget.h" 
+#include "PROGETTO/Actors/CompositeItem.h"
+#include "Components/TextBlock.h"
+#include "PROGETTO/Widgets/CompositePartsWidget.h"
 #include "PROGETTO/Structs/Enums/EquipmentTypes.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/Texture2D.h"
@@ -13,6 +16,17 @@
 void UItemEntryWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+
+	UE_LOG(LogTemp, Warning,
+		TEXT("ItemEntryWidget::NativeConstruct — TakeButton: %s, StoreButton: %s"),
+		TakeButton ? TEXT("BOUND") : TEXT("NULL"),
+		StoreButton ? TEXT("BOUND") : TEXT("NULL")
+	);
+
+	if (TakeButtonText)
+		TakeButtonText->SetText(FText::FromString(TEXT("Prendi")));
+	if (StoreButtonText)
+		StoreButtonText->SetText(FText::FromString(TEXT("Deposita")));
 
 	if (UseButton)
 	{
@@ -30,6 +44,21 @@ void UItemEntryWidget::NativeConstruct()
 	{
 		EquipButton->OnClicked.AddDynamic(this, &UItemEntryWidget::OnEquipButtonClicked);
 	}
+
+	if (DismantleButton)   DismantleButton->OnClicked.AddDynamic(this, &UItemEntryWidget::OnDismantleButtonClicked);
+
+	
+	// Nascondi entrambi finché non ci dicono di mostrarli
+	if (TakeButton)  TakeButton->SetVisibility(ESlateVisibility::Collapsed);
+	if (StoreButton) StoreButton->SetVisibility(ESlateVisibility::Collapsed);
+
+	// Bind click normalissimi
+	if (TakeButton)
+		TakeButton->OnClicked.AddDynamic(this, &UItemEntryWidget::HandleTake);
+	if (StoreButton)
+		StoreButton->OnClicked.AddDynamic(this, &UItemEntryWidget::HandleStore);
+
+
 }
 
 void UItemEntryWidget::SetupFromItem(ABaseItem* InItem, APROGETTOCharacter* InOwningCharacter)
@@ -43,6 +72,14 @@ void UItemEntryWidget::SetupFromItem(ABaseItem* InItem, APROGETTOCharacter* InOw
 	FString Info = FString::Printf(TEXT(" %s\n Peso: %.1f"), *Item->ItemName, Item->Weight);
 		
 	DetailsText->SetText(FText::FromString(Info));
+
+	// Nascondi/mostra Pulsante “Dismantle” in base al tipo
+	if (DismantleButton)
+	{
+		bool bIsComposite = Item && Item->IsA(ACompositeItem::StaticClass());
+		DismantleButton->SetVisibility(
+			bIsComposite ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	}
 
 	if (UseButton)
 	{
@@ -241,6 +278,45 @@ void UItemEntryWidget::OnEquipButtonClicked()
 		// Se esiste già una istanza aperta (non chiusa), potresti ignorare o force-close qui
 	}
 
+}
+
+void UItemEntryWidget::OnDismantleButtonClicked()
+{
+	if (!Item || Item->ItemType != EItemType::Composite || !OwningCharacter)
+		return;
+
+	// 1) Crea il widget di anteprima parti
+	if (!CompositePartsWidgetInstance && CompositePartsWidgetClass)
+	{
+		CompositePartsWidgetInstance = CreateWidget<UCompositePartsWidget>(
+			GetWorld(), CompositePartsWidgetClass);
+		if (CompositePartsWidgetInstance)
+		{
+			// 2) Lo inizializzo con il composite e il character
+			CompositePartsWidgetInstance->SetupForComposite(
+				Cast<ACompositeItem>(Item),
+				OwningCharacter
+			);
+			// 3) Lo mostro a schermo
+			CompositePartsWidgetInstance->AddToViewport(1000);
+		}
+	}
+}
+
+void UItemEntryWidget::HandleTake()
+{
+	if (OnTakeAction.IsBound() && Item)
+	{
+		OnTakeAction.Execute(Item);
+	}
+}
+
+void UItemEntryWidget::HandleStore()
+{
+	if (OnStoreAction.IsBound() && Item)
+	{
+		OnStoreAction.Execute(Item);
+	}
 }
 	
 

@@ -15,6 +15,10 @@ class ATorchActor;
 class ABatteryActor;
 class UInventoryWidget; 
 class UInventoryComponent;
+class UCompositePartsWidget;
+
+// Delegate per azioni custom su un item
+DECLARE_DELEGATE_OneParam(FOnItemAction, ABaseItem*);
 
 UCLASS()
 class PROGETTO_API UItemEntryWidget : public UUserWidget
@@ -24,6 +28,19 @@ class PROGETTO_API UItemEntryWidget : public UUserWidget
 public:
 
     //VARIABILI E RIFERIMENTI
+
+    /** Bottone Prendi / Take */
+    UPROPERTY(meta = (BindWidget))
+    UButton* TakeButton;
+
+    /** Bottone Deposita / Store */
+    UPROPERTY(meta = (BindWidget))
+    UButton* StoreButton;
+
+    /** Delegate chiamato da TakeButton */
+    FOnItemAction OnTakeAction;
+    /** Delegate chiamato da StoreButton */
+    FOnItemAction OnStoreAction;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Componet")
     UInventoryComponent* Inv;
@@ -49,6 +66,9 @@ public:
     UPROPERTY(meta = (BindWidget))
     UButton* EquipButton;
 
+    UPROPERTY(meta = (BindWidget))
+    UButton * DismantleButton;
+
     UPROPERTY(EditAnywhere, Category = "UI")
     TSubclassOf<UItemDescriptionWidget> ItemDescriptionWidgetClass;
 
@@ -62,6 +82,24 @@ public:
 
     UPROPERTY()
     UItemDescriptionWidget* ItemDescriptionInstance;
+
+    UPROPERTY(EditAnywhere, Category = "Composite")
+    TSubclassOf<UCompositePartsWidget> CompositePartsWidgetClass;
+    UPROPERTY()
+    UCompositePartsWidget* CompositePartsWidgetInstance;
+
+    UPROPERTY(meta = (BindWidget))
+    UTextBlock* StoreButtonText;
+
+    // e per TakeButton
+    UPROPERTY(meta = (BindWidget))
+    UTextBlock* TakeButtonText;
+
+    UFUNCTION()
+    void HandleTake();
+
+    UFUNCTION()
+    void HandleStore();
 
 	//FUNZIONI
 
@@ -82,6 +120,9 @@ public:
 
     UFUNCTION()
     void OnEquipButtonClicked();
+
+    UFUNCTION()
+    void OnDismantleButtonClicked();
 
     UFUNCTION(BlueprintCallable)
     void SetupFromItem(ABaseItem* InItem, APROGETTOCharacter* InOwningCharacter);
