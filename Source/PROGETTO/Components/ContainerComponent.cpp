@@ -37,49 +37,49 @@ bool UContainerComponent::RemoveItemFromContainer(ABaseItem* Item)
     return false;
 }
 
-void UContainerComponent::ToggleContainer(APROGETTOCharacter* ForCharacter)
+void UContainerComponent::ToggleContainer(APROGETTOCharacter* Player)
 {
-    if (!ForCharacter || !ChestWidgetClass) return;
-    CachedCharacter = ForCharacter;
+    if (!ChestWidgetClass || !Player) return;
 
-    APlayerController* PC = Cast<APlayerController>(ForCharacter->GetController());
+    APlayerController* PC = Cast<APlayerController>(Player->GetController());
     if (!PC) return;
 
-    // CREA UNA SOLA VOLTA IL WIDGET
+    // Se non esiste ancora il widget, lo creo e lo apro
     if (!ChestWidgetInstance)
     {
+        // 1) Creo il widget con PC come Outer
         ChestWidgetInstance = CreateWidget<UChestWidget>(PC, ChestWidgetClass);
-        ChestWidgetInstance->SetupForContainer(this, ForCharacter);
+        if (!ChestWidgetInstance)
+        {
+            UE_LOG(LogTemp, Error, TEXT("ToggleContainer: impossible to create ChestWidget"));
+            return;
+        }
+
+        // 2) Chiamo subito Setup e RefreshLists
+        ChestWidgetInstance->SetupForContainer(this, Player);
+
+        // 3) Mostro in viewport
         ChestWidgetInstance->AddToViewport(500);
-    }
 
-    if (ChestWidgetInstance->IsVisible())
-    {
-        // ——— CHIUSURA BAULE ———
-        ChestWidgetInstance->SetVisibility(ESlateVisibility::Hidden);
-
-        // Rimuovi cursore UI
-        PC->SetShowMouseCursor(false);
-        // Ripristina input di gioco
-        PC->SetInputMode(FInputModeGameOnly());
-        ForCharacter->EnableInput(PC);
+        // 4) Imposto input mode/UI
+        PC->bShowMouseCursor = true;
+        PC->bEnableClickEvents = true;
+        PC->bEnableMouseOverEvents = true;
+        FInputModeUIOnly UI;
+        UI.SetWidgetToFocus(ChestWidgetInstance->TakeWidget()); // o simile
+        //UIInput.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+        PC->SetInputMode(UI);
     }
     else
     {
-        // ——— APERTURA BAULE ———
-        ChestWidgetInstance->SetupForContainer(this, ForCharacter);
-        ChestWidgetInstance->SetVisibility(ESlateVisibility::Visible);
+        // Se il widget esiste, lo chiudo
+        ChestWidgetInstance->RemoveFromParent();
+        ChestWidgetInstance = nullptr;
 
-        // Mostra solo il cursore per UI
-        PC->SetShowMouseCursor(true);
-        // Modalità solo UI: blocca ogni input di gioco
-        FInputModeUIOnly UIMode;
-        UIMode.SetWidgetToFocus(ChestWidgetInstance->TakeWidget());
-        UIMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-        PC->SetInputMode(UIMode);
-
-        // Disabilita ogni input sul Character
-        ForCharacter->DisableInput(PC);
+        // Ripristino input di gioco
+        PC->bShowMouseCursor = false;
+        FInputModeGameOnly GameInput;
+        PC->SetInputMode(GameInput);
     }
 }
 

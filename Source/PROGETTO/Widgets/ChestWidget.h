@@ -10,6 +10,7 @@ class UItemEntryWidget;
 class UContainerComponent;
 class UItemEntryWidget;
 class APROGETTOCharacter;
+class UItemDescriptionWidget;
 class UStaticMeshComponent;
 class ABaseItem;
 
@@ -22,6 +23,12 @@ public:
     /** Inizializza il widget con il container e il character */
     UFUNCTION()
     void SetupForContainer(UContainerComponent* InContainer, APROGETTOCharacter* InPlayer);
+
+    UFUNCTION()
+    void OnEntryDescriptionRequested(ABaseItem* Item);
+
+    UPROPERTY()
+    TArray<UItemDescriptionWidget*> OpenDescriptions;
 
 protected:
     virtual void NativeConstruct() override;
@@ -42,6 +49,9 @@ private:
 
     UPROPERTY(EditAnywhere, Category = "UI")
     TSubclassOf<UItemEntryWidget> ItemEntryWidgetClass;
+
+    UPROPERTY(EditAnywhere, Category = "Chest|UI")
+    TSubclassOf<UItemDescriptionWidget> DescriptionWidgetClass;
 
     /** Ricostruisce entrambe le liste */
     void RefreshLists();

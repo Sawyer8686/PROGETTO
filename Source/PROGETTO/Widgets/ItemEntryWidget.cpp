@@ -17,6 +17,11 @@ void UItemEntryWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
+	if (DescriptionButton)
+	{
+		DescriptionButton->OnClicked.AddDynamic(this, &UItemEntryWidget::HandleDescriptionClicked);
+	}
+
 	UE_LOG(LogTemp, Warning,
 		TEXT("ItemEntryWidget::NativeConstruct — TakeButton: %s, StoreButton: %s"),
 		TakeButton ? TEXT("BOUND") : TEXT("NULL"),
@@ -301,6 +306,12 @@ void UItemEntryWidget::OnDismantleButtonClicked()
 			CompositePartsWidgetInstance->AddToViewport(1000);
 		}
 	}
+}
+
+void UItemEntryWidget::HandleDescriptionClicked()
+{
+	UE_LOG(LogTemp, Warning, TEXT("UItemEntryWidget: Description clicked for %s"), *Item->ItemName);
+	OnDescriptionRequested.Broadcast(Item);
 }
 
 void UItemEntryWidget::HandleTake()

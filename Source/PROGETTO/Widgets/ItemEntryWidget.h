@@ -19,6 +19,7 @@ class UCompositePartsWidget;
 
 // Delegate per azioni custom su un item
 DECLARE_DELEGATE_OneParam(FOnItemAction, ABaseItem*);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDescriptionRequested, ABaseItem*, Item);
 
 UCLASS()
 class PROGETTO_API UItemEntryWidget : public UUserWidget
@@ -28,6 +29,12 @@ class PROGETTO_API UItemEntryWidget : public UUserWidget
 public:
 
     //VARIABILI E RIFERIMENTI
+
+    UPROPERTY(BlueprintAssignable, Category = "Events")
+    FOnDescriptionRequested OnDescriptionRequested;
+
+    UFUNCTION()
+    void HandleDescriptionClicked();
 
     /** Bottone Prendi / Take */
     UPROPERTY(meta = (BindWidget))

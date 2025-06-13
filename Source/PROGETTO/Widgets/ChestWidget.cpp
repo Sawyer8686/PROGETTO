@@ -4,6 +4,9 @@
 #include "ItemEntryWidget.h"           // usa entry widget generico
 #include "PROGETTO/Components/ContainerComponent.h"
 #include "PROGETTO/Widgets/ItemEntryWidget.h"
+#include "ItemDescriptionWidget.h"
+#include "Kismet/GameplayStatics.h"
+#include "GameFramework/PlayerController.h"
 #include "PROGETTO/PROGETTOCharacter.h"
 #include <PROGETTO/Actors/CompositeItem.h>
 
@@ -21,72 +24,89 @@ void UChestWidget::SetupForContainer(UContainerComponent* InContainer, APROGETTO
     RefreshLists();
 }
 
+void UChestWidget::OnEntryDescriptionRequested(ABaseItem* Item)
+{
+    UE_LOG(LogTemp, Warning, TEXT("UChestWidget: Description requested for %s"), *Item->ItemName);
+    if (!DescriptionWidgetClass)
+    {
+        UE_LOG(LogTemp, Error, TEXT("UChestWidget: DescriptionWidgetClass is null!"));
+        return;
+    }
+    APlayerController* PC = PlayerChar ? Cast<APlayerController>(PlayerChar->GetController()) : UGameplayStatics::GetPlayerController(this, 0);
+    if (!PC)
+    {
+        UE_LOG(LogTemp, Error, TEXT("UChestWidget: No valid PlayerController found."));
+        return;
+    }
+    UItemDescriptionWidget* Desc = CreateWidget<UItemDescriptionWidget>(PC, DescriptionWidgetClass);
+    if (!Desc)
+    {
+        UE_LOG(LogTemp, Error, TEXT("UChestWidget: Failed to create description widget."));
+        return;
+    }
+
+    // Salva il riferimento per poterlo chiudere dopo
+    //OpenDescriptions.Add(Desc);
+    Desc->ParentChestWidget = this;
+
+    // Disabilita il chest finché la descrizione è aperta
+    //SetIsEnabled(false);
+    
+    Desc->SetDescriptionText(Item->Description);
+    Desc->AddToViewport(1001);
+    UE_LOG(LogTemp, Warning, TEXT("UChestWidget: DescriptionWidget added to viewport for %s."), *Item->ItemName);
+}
+
 void UChestWidget::RefreshLists()
 {
 
     
     UE_LOG(LogTemp, Warning, TEXT("RefreshLists() invoked. Container has %d items"), ContainerComp ? ContainerComp->Inventory.Num() : -1);
-
-    if (!ContainerComp || !PlayerChar || !ChestListBox || !PlayerListBox)
+    if (!ContainerComp || !PlayerChar || !ChestListBox || !PlayerListBox || !ItemEntryWidgetClass)
         return;
 
     ChestListBox->ClearChildren();
+    PlayerListBox->ClearChildren();
 
+    // CHest contents
     for (ABaseItem* It : ContainerComp->Inventory)
     {
-        if (!ItemEntryWidgetClass)
-        {
-            UE_LOG(LogTemp, Error, TEXT("ItemEntryWidgetClass è NULL!"));
-            return;
-        }
-
         if (!It) continue;
-        UItemEntryWidget* Entry = CreateWidget<UItemEntryWidget>(this, ItemEntryWidgetClass);
+        UItemEntryWidget* Entry = CreateWidget<UItemEntryWidget>(GetWorld(), ItemEntryWidgetClass);
         if (!Entry) continue;
 
-        Entry->Item = It;
-        Entry->OwningCharacter = PlayerChar;
-
-        Entry->EquipButton->SetVisibility(ESlateVisibility::Collapsed);
-        Entry->DiscardButton->SetVisibility(ESlateVisibility::Collapsed);
-        
+        Entry->SetupFromItem(It, PlayerChar);
+        Entry->DescriptionButton->SetVisibility(ESlateVisibility::Visible);
         Entry->TakeButton->SetVisibility(ESlateVisibility::Visible);
         Entry->StoreButton->SetVisibility(ESlateVisibility::Collapsed);
-        Entry->OnTakeAction = FOnItemAction::CreateUObject(this, &UChestWidget::OnTakeFromChest);
+        Entry->EquipButton->SetVisibility(ESlateVisibility::Collapsed);
+        Entry->DiscardButton->SetVisibility(ESlateVisibility::Collapsed);
 
-        
+        //Entry->OnTakeAction.AddDynamic(this, &UChestWidget::OnTakeFromChest);
+        Entry->OnTakeAction.BindUObject(this, &UChestWidget::OnTakeFromChest);
+        Entry->OnDescriptionRequested.AddDynamic(this, &UChestWidget::OnEntryDescriptionRequested);
+
         ChestListBox->AddChild(Entry);
     }
 
-    
-    PlayerListBox->ClearChildren();
-
+    // Player inventory for storing
     if (UInventoryComponent* InvComp = PlayerChar->FindComponentByClass<UInventoryComponent>())
     {
         for (ABaseItem* It : InvComp->Inventory)
         {
             if (!It) continue;
-            UItemEntryWidget* Entry = CreateWidget<UItemEntryWidget>(this, ItemEntryWidgetClass);
+            UItemEntryWidget* Entry = CreateWidget<UItemEntryWidget>(GetWorld(), ItemEntryWidgetClass);
             if (!Entry) continue;
 
-            Entry->Item = It;
-            Entry->OwningCharacter = PlayerChar;
-
+            Entry->SetupFromItem(It, PlayerChar);
+            Entry->DescriptionButton->SetVisibility(ESlateVisibility::Visible);
             Entry->TakeButton->SetVisibility(ESlateVisibility::Collapsed);
             Entry->StoreButton->SetVisibility(ESlateVisibility::Visible);
-
-            UE_LOG(LogTemp, Warning,
-                TEXT("PLayerEntry '%s' — Take: %d, Store: %d"),
-                *It->ItemName,
-                (int)Entry->TakeButton->GetVisibility(),
-                (int)Entry->StoreButton->GetVisibility()
-            );
-
-            Entry->OnStoreAction = FOnItemAction::CreateUObject(this, &UChestWidget::OnStoreToChest);
-
             Entry->EquipButton->SetVisibility(ESlateVisibility::Collapsed);
             Entry->DiscardButton->SetVisibility(ESlateVisibility::Collapsed);
-           
+
+            Entry->OnStoreAction.BindUObject(this, &UChestWidget::OnStoreToChest);
+            Entry->OnDescriptionRequested.AddDynamic(this, &UChestWidget::OnEntryDescriptionRequested);
 
             PlayerListBox->AddChild(Entry);
         }
@@ -97,6 +117,28 @@ void UChestWidget::OnCloseClicked()
 {
     if (ContainerComp && PlayerChar)
         ContainerComp->ToggleContainer(PlayerChar);
+
+    // Chiudi tutti i description aperti
+    for (UItemDescriptionWidget* Desc : OpenDescriptions)
+    {
+        if (Desc && Desc->IsInViewport())
+            Desc->RemoveFromParent();
+    }
+    OpenDescriptions.Empty();
+
+    // Chiudi il chest stesso
+    RemoveFromParent();
+
+    // Ripristina input mode di gioco
+    if (PlayerChar)
+    {
+        if (APlayerController* PC = Cast<APlayerController>(PlayerChar->GetController()))
+        {
+            PC->bShowMouseCursor = false;
+            FInputModeGameOnly GameInput;
+            PC->SetInputMode(GameInput);
+        }
+    }
 }
 
 void UChestWidget::OnTakeFromChest(ABaseItem* Item)

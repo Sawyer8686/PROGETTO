@@ -2,6 +2,8 @@
 #include "Components/Border.h"
 #include "Components/TextBlock.h"
 #include "Kismet/GameplayStatics.h"
+#include "GameFramework/PlayerController.h"
+#include "PROGETTO/Widgets/ChestWidget.h"
 #include "PROGETTO/Widgets/InventoryWidget.h"
 #include "Components/Button.h"
 
@@ -36,26 +38,35 @@ void UItemDescriptionWidget::SetParentInventoryWidget(UInventoryWidget* Parent)
 
 void UItemDescriptionWidget::OnCloseButtonClicked()
 {
-	// Deregistro questa descrizione dal widget Inventory
-	//if (ParentInventoryWidget)
-	//{
-		//ParentInventoryWidget->ClearOpenDescriptions();
-	//}
-
-	// Rimuovo il widget dal viewport
-	//RemoveFromParent();
-
-	// Restore inventory input
+	
 	if (ParentInventoryWidget)
 	{
 		ParentInventoryWidget->SetIsEnabled(true);
 		ParentInventoryWidget->UnregisterOpenDescription(this);
 	}
 
-	// Remove this modal
 	RemoveFromParent();
 
-	// Reset input mode to inventory UI only
+	// Re-enable the chest widget UI
+	if (ParentChestWidget)
+	{
+		ParentChestWidget->SetIsEnabled(true);
+
+		// Restore input mode and focus to the chest widget
+		if (APlayerController* PC = Cast<APlayerController>(GetOwningPlayer()))
+		{
+			PC->bShowMouseCursor = true;
+			PC->bEnableClickEvents = true;
+			PC->bEnableMouseOverEvents = true;
+
+			FInputModeUIOnly UIInput;
+			// Ensure the chest root panel receives focus
+			UIInput.SetWidgetToFocus(ParentChestWidget->GetRootWidget()->TakeWidget());
+			UIInput.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+			PC->SetInputMode(UIInput);
+		}
+	}
+
 	if (APlayerController* PC = UGameplayStatics::GetPlayerController(this, 0))
 	{
 		PC->SetShowMouseCursor(true);
@@ -67,6 +78,7 @@ void UItemDescriptionWidget::OnCloseButtonClicked()
 		}
 		PC->SetInputMode(UIInput);
 	}
+	
 }
 
 

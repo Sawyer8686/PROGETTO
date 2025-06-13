@@ -9,6 +9,7 @@
 
 class UInventoryWidget;
 class ABaseItem;
+class UChestWidget;
 class APROGETTOCharacter;
 
 
@@ -18,6 +19,10 @@ class PROGETTO_API UItemDescriptionWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
+
+	UPROPERTY()
+	UChestWidget* ParentChestWidget;
+
 	
 	UFUNCTION(BlueprintCallable, Category = "Item Description")
 	void SetDescriptionText(const FText& InDescription);
